@@ -134,17 +134,10 @@
                 <h2 class="text-xl font-bold flex items-center">
                     <i class="fa fa-comments-o text-primary mr-2"></i>智能对话
                 </h2>
-                <div class="flex items-center gap-2">
-                    <span class="text-sm text-gray-600">选择模型：</span>
-                    <div class="relative">
-                        <select id="model-selector" class="px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm pr-8">
-                            <option value="dify">Dify 方式</option>
-                            <option value="openai">OpenAI 方式</option>
-                            <option value="glm">GLM 方式</option>
-                            <option value="add-model">+ 新增模型</option>
-                        </select>
-                    </div>
-                </div>
+                <button id="api-key-settings-btn" class="px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm bg-white hover:bg-gray-50 flex items-center gap-2">
+                    <i class="fa fa-key"></i>
+                    <span>API密钥设置</span>
+                </button>
             </div>
                     
                     <div class="flex-1 border border-gray-200 rounded-lg overflow-hidden flex flex-col">
@@ -163,6 +156,38 @@
                         
                         <!-- 输入框区域 -->
                         <div class="border-t border-gray-200 p-4 bg-white">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="relative">
+                                        <button id="model-select-btn" class="flex items-center gap-2 px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                            <span id="current-model-display">GLM-5</span>
+                                            <i class="fa fa-chevron-down text-xs"></i>
+                                        </button>
+                                        <!-- 模型选择下拉面板 -->
+                                        <div id="model-selector-panel" class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 hidden z-10 w-80">
+                                            <div class="p-2">
+                                                <div class="text-xs text-gray-500 px-3 py-2 border-b border-gray-100">选择模型</div>
+                                                <div id="model-list" class="max-h-48 overflow-y-auto">
+                                                    <div id="no-models-tip" class="text-center py-4 text-gray-400 text-sm">
+                                                        <i class="fa fa-inbox text-2xl mb-2"></i>
+                                                        <p>暂无模型，请添加</p>
+                                                    </div>
+                                                </div>
+                                                <div class="border-t border-gray-100 mt-1 pt-1">
+                                                    <button id="add-new-model-btn" class="w-full px-3 py-2 text-left text-sm text-primary hover:bg-primary/5 rounded-lg flex items-center gap-2">
+                                                        <i class="fa fa-plus"></i>
+                                                        <span>新增模型</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button id="attach-btn" class="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                        <i class="fa fa-paperclip"></i>
+                                        <span>上传文件</span>
+                                    </button>
+                                </div>
+                            </div>
                             <div class="flex gap-2">
                                 <textarea id="chat-input" placeholder="输入您的问题，按Enter发送..." 
                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
@@ -173,9 +198,6 @@
                             </div>
                             <div class="flex items-center justify-between mt-2 text-xs text-gray-500">
                                 <div class="flex gap-3">
-                                    <button id="attach-btn" class="hover:text-primary transition-colors">
-                                        <i class="fa fa-paperclip mr-1"></i>附件
-                                    </button>
                                     <button class="hover:text-primary transition-colors">
                                         <i class="fa fa-smile-o mr-1"></i>表情
                                     </button>
@@ -191,6 +213,49 @@
             </div>
         </div>
     </main>
+
+    <!-- API密钥设置模态框 -->
+    <div id="api-key-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-primary">API密钥设置</h3>
+                <button id="close-api-key-modal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <div class="flex items-start gap-2">
+                        <i class="fa fa-exclamation-triangle text-yellow-600 mt-0.5"></i>
+                        <div class="text-sm text-yellow-800">
+                            <p class="font-medium">安全提示</p>
+                            <p class="mt-1">API密钥将使用加密方式存储在本地，请妥善保管您的密钥信息。</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">GLM-5 API 密钥 <span class="text-red-500">*</span></label>
+                    <input type="password" id="glm5-api-key" placeholder="请输入GLM-5的API密钥" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <p class="text-xs text-gray-500 mt-1">GLM-5模型需要API密钥进行身份验证</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">其他模型 API 密钥（可选）</label>
+                    <input type="password" id="other-api-key" placeholder="请输入其他模型的API密钥" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <p class="text-xs text-gray-500 mt-1">用于其他模型的API访问</p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button id="cancel-api-key" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">
+                    取消
+                </button>
+                <button id="save-api-key" class="btn-primary px-4 py-2">
+                    保存密钥
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- 模型配置模态框 -->
     <div id="model-config-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
@@ -237,7 +302,7 @@
             </div>
         </div>
     </div>
-
+    
     <!-- 新增模型模态框 -->
     <div id="add-model-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
@@ -249,22 +314,25 @@
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">模型名称</label>
-                    <input type="text" id="new-model-name" placeholder="请输入模型名称" 
+                    <label class="block text-sm font-medium text-gray-700 mb-1">模型名称 <span class="text-red-500">*</span></label>
+                    <input type="text" id="model-name" placeholder="请输入模型自定义名称" 
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">模型类型</label>
-                    <select id="new-model-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
-                        <option value="openai">OpenAI</option>
-                        <option value="dify">Dify</option>
-                        <option value="glm">GLM</option>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">模型类型 <span class="text-red-500">*</span></label>
+                    <select id="model-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
+                        <option value="dify-api">Dify API</option>
+                        <option value="bigmodel">BigModel</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">API 基础地址</label>
-                    <input type="text" id="new-model-api-url" placeholder="请输入API基础地址" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
+                <div id="bigmodel-specific-fields" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">选用模型 <span class="text-red-500">*</span></label>
+                        <select id="bigmodel-select" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
+                            <option value="glm-5">GLM-5</option>
+                            <option value="glm-4.7">GLM-4.7</option>
+                        </select>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">API 密钥 <span class="text-red-500">*</span></label>
@@ -282,8 +350,6 @@
             </div>
         </div>
     </div>
-    
-
 
     <footer class="bg-white mt-16 py-8 border-t border-gray-200">
         <div class="container mx-auto px-4 text-center text-gray-600">
@@ -314,11 +380,148 @@
             const issueDescription = document.getElementById('issue-description');
             const clearIssueBtn = document.getElementById('clear-issue');
             const submitIssueBtn = document.getElementById('submit-issue');
-            const modelSelector = document.getElementById('model-selector');
-            const addModelModal = document.getElementById('add-model-modal');
-            const closeAddModelModal = document.getElementById('close-add-model-modal');
-            const cancelAddModel = document.getElementById('cancel-add-model');
-            const saveNewModel = document.getElementById('save-new-model');
+            const apiKeySettingsBtn = document.getElementById('api-key-settings-btn');
+            const apiKeyModal = document.getElementById('api-key-modal');
+            const closeApiKeyModal = document.getElementById('close-api-key-modal');
+            const cancelApiKey = document.getElementById('cancel-api-key');
+            const saveApiKey = document.getElementById('save-api-key');
+            const glm5ApiKeyInput = document.getElementById('glm5-api-key');
+            const otherApiKeyInput = document.getElementById('other-api-key');
+            
+            let currentModel = 'GLM-5';
+            
+            function encryptApiKey(apiKey) {
+                const key = 'vastbase-secret-key-2026';
+                let encrypted = '';
+                for (let i = 0; i < apiKey.length; i++) {
+                    const charCode = apiKey.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+                    encrypted += String.fromCharCode(charCode);
+                }
+                return btoa(encrypted);
+            }
+            
+            function decryptApiKey(encryptedKey) {
+                try {
+                    const key = 'vastbase-secret-key-2026';
+                    const decoded = atob(encryptedKey);
+                    let decrypted = '';
+                    for (let i = 0; i < decoded.length; i++) {
+                        const charCode = decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+                        decrypted += String.fromCharCode(charCode);
+                    }
+                    return decrypted;
+                } catch (e) {
+                    console.error('解密失败:', e);
+                    return null;
+                }
+            }
+            
+            function saveEncryptedApiKey(model, apiKey) {
+                const encrypted = encryptApiKey(apiKey);
+                const keys = JSON.parse(localStorage.getItem('encryptedApiKeys') || '{}');
+                keys[model] = encrypted;
+                localStorage.setItem('encryptedApiKeys', JSON.stringify(keys));
+            }
+            
+            function getDecryptedApiKey(model) {
+                const keys = JSON.parse(localStorage.getItem('encryptedApiKeys') || '{}');
+                const encrypted = keys[model];
+                if (encrypted) {
+                    return decryptApiKey(encrypted);
+                }
+                return null;
+            }
+            
+            // 模型管理相关函数
+            function saveModel(modelData) {
+                const models = getModels();
+                models.push(modelData);
+                localStorage.setItem('models', JSON.stringify(models));
+            }
+            
+            function getModels() {
+                return JSON.parse(localStorage.getItem('models') || '[]');
+            }
+            
+            function deleteModel(modelId) {
+                console.log('删除模型ID:', modelId);
+                const models = getModels();
+                console.log('删除前模型列表:', models);
+                const updatedModels = models.filter(model => model.id !== modelId);
+                console.log('删除后模型列表:', updatedModels);
+                localStorage.setItem('models', JSON.stringify(updatedModels));
+                console.log('localStorage中的模型:', localStorage.getItem('models'));
+            }
+            
+            function initDefaultModel() {
+                currentModel = 'GLM-5';
+            }
+            
+            // 加载模型列表
+            function loadModelList() {
+                const models = getModels();
+                console.log('加载模型列表:', models);
+                const modelList = document.getElementById('model-list');
+                
+                // 先清空模型列表（保留 noModelsTip 元素）
+                const existingNoModelsTip = document.getElementById('no-models-tip');
+                
+                // 清空所有内容
+                modelList.innerHTML = '';
+                
+                if (models.length > 0) {
+                    // 有模型时，渲染模型列表
+                    models.forEach(model => {
+                        const modelItem = document.createElement('div');
+                        modelItem.className = 'px-3 py-2 hover:bg-gray-50 cursor-pointer flex items-center justify-between';
+                        modelItem.innerHTML = `
+                            <div>
+                                <p class="font-medium">${model.name}</p>
+                                <p class="text-xs text-gray-500">${model.type === 'dify-api' ? 'Dify API' : 'BigModel'}</p>
+                            </div>
+                            <button class="delete-model-btn text-gray-400 hover:text-red-500 px-2 py-1 rounded hover:bg-red-50 flex items-center gap-1">
+                                <i class="fa fa-trash"></i>
+                                <span>删除</span>
+                            </button>
+                        `;
+                        
+                        // 添加删除按钮事件监听器
+                        const deleteBtn = modelItem.querySelector('.delete-model-btn');
+                        deleteBtn.addEventListener('click', function(e) {
+                            e.stopPropagation(); // 阻止事件冒泡
+                            console.log('点击删除按钮，模型ID:', model.id);
+                            deleteModel(model.id);
+                            // 立即更新模型列表
+                            loadModelList();
+                        });
+                        
+                        modelItem.addEventListener('click', function(e) {
+                            if (!e.target.closest('.delete-model-btn')) {
+                                selectModel(model);
+                            }
+                        });
+                        
+                        modelList.appendChild(modelItem);
+                    });
+                } else {
+                    // 无模型时，显示提示
+                    const noModelsTip = document.createElement('div');
+                    noModelsTip.id = 'no-models-tip';
+                    noModelsTip.className = 'text-center py-4 text-gray-400 text-sm';
+                    noModelsTip.innerHTML = `
+                        <i class="fa fa-inbox text-2xl mb-2"></i>
+                        <p>暂无模型，请添加</p>
+                    `;
+                    modelList.appendChild(noModelsTip);
+                }
+            }
+            
+            // 选择模型
+            function selectModel(model) {
+                currentModel = model.name;
+                document.getElementById('current-model-display').textContent = model.name;
+                document.getElementById('model-selector-panel').classList.add('hidden');
+            }
             
             // 设置当前时间到欢迎消息
             const welcomeMessageTime = chatMessages.querySelector('.chat-bubble-ai .text-gray-500');
@@ -328,8 +531,179 @@
                 welcomeMessageTime.textContent = time;
             }
             
-            // 初始化界面
+            initDefaultModel();
             updateFileList();
+            loadModelList();
+            
+            // 模型管理事件监听器
+            const modelSelectBtn = document.getElementById('model-select-btn');
+            const modelSelectorPanel = document.getElementById('model-selector-panel');
+            const addNewModelBtn = document.getElementById('add-new-model-btn');
+            const addModelModal = document.getElementById('add-model-modal');
+            const closeAddModelModal = document.getElementById('close-add-model-modal');
+            const cancelAddModel = document.getElementById('cancel-add-model');
+            const saveNewModel = document.getElementById('save-new-model');
+            const modelTypeSelect = document.getElementById('model-type');
+            const bigmodelSpecificFields = document.getElementById('bigmodel-specific-fields');
+            
+            // 模型选择按钮点击事件
+            modelSelectBtn.addEventListener('click', function() {
+                modelSelectorPanel.classList.toggle('hidden');
+                loadModelList(); // 每次打开时重新加载模型列表
+            });
+            
+            // 点击其他地方关闭模型选择面板
+            document.addEventListener('click', function(e) {
+                if (!modelSelectBtn.contains(e.target) && !modelSelectorPanel.contains(e.target)) {
+                    modelSelectorPanel.classList.add('hidden');
+                }
+            });
+            
+            // 文件上传功能
+            const attachBtn = document.getElementById('attach-btn');
+            
+            // 创建隐藏的文件输入元素
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.multiple = true;
+            fileInput.className = 'hidden';
+            document.body.appendChild(fileInput);
+            
+            // 上传文件按钮点击事件
+            attachBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // 文件选择事件
+            fileInput.addEventListener('change', function(e) {
+                if (this.files.length > 0) {
+                    handleFileUpload(this.files);
+                }
+            });
+            
+            // 新增模型按钮点击事件
+            addNewModelBtn.addEventListener('click', function() {
+                modelSelectorPanel.classList.add('hidden');
+                addModelModal.classList.remove('hidden');
+            });
+            
+            // 模型类型选择变化事件
+            modelTypeSelect.addEventListener('change', function() {
+                if (this.value === 'bigmodel') {
+                    bigmodelSpecificFields.classList.remove('hidden');
+                } else {
+                    bigmodelSpecificFields.classList.add('hidden');
+                }
+            });
+            
+            // 关闭新增模型弹窗
+            closeAddModelModal.addEventListener('click', function() {
+                addModelModal.classList.add('hidden');
+            });
+            
+            cancelAddModel.addEventListener('click', function() {
+                addModelModal.classList.add('hidden');
+            });
+            
+            addModelModal.addEventListener('click', function(e) {
+                if (e.target === addModelModal) {
+                    addModelModal.classList.add('hidden');
+                }
+            });
+            
+            // 保存新模型
+            saveNewModel.addEventListener('click', function() {
+                const modelName = document.getElementById('model-name').value.trim();
+                const modelType = document.getElementById('model-type').value;
+                const apiKey = document.getElementById('new-model-api-key').value.trim();
+                
+                if (!modelName) {
+                    alert('请输入模型名称');
+                    return;
+                }
+                
+                if (!apiKey) {
+                    alert('请输入API密钥');
+                    return;
+                }
+                
+                const modelData = {
+                    id: Date.now().toString(),
+                    name: modelName,
+                    type: modelType,
+                    apiKey: apiKey
+                };
+                
+                if (modelType === 'bigmodel') {
+                    modelData.bigmodel = document.getElementById('bigmodel-select').value;
+                }
+                
+                saveModel(modelData);
+                saveEncryptedApiKey(modelName, apiKey);
+
+                // 关闭弹窗
+                addModelModal.classList.add('hidden');
+
+                // 立即更新模型列表
+                loadModelList();
+
+                // 自动打开模型选择面板，让用户看到新添加的模型
+                modelSelectorPanel.classList.remove('hidden');
+
+                // 清空表单
+                document.getElementById('model-name').value = '';
+                document.getElementById('model-type').value = 'dify-api';
+                document.getElementById('new-model-api-key').value = '';
+                document.getElementById('bigmodel-select').value = 'glm-5';
+                bigmodelSpecificFields.classList.add('hidden');
+            });
+            
+            apiKeySettingsBtn.addEventListener('click', function() {
+                const savedGlm5Key = getDecryptedApiKey('GLM-5');
+                const savedOtherKey = getDecryptedApiKey('other');
+                
+                if (savedGlm5Key) {
+                    glm5ApiKeyInput.value = savedGlm5Key;
+                }
+                if (savedOtherKey) {
+                    otherApiKeyInput.value = savedOtherKey;
+                }
+                
+                apiKeyModal.classList.remove('hidden');
+            });
+            
+            closeApiKeyModal.addEventListener('click', function() {
+                apiKeyModal.classList.add('hidden');
+            });
+            
+            cancelApiKey.addEventListener('click', function() {
+                apiKeyModal.classList.add('hidden');
+            });
+            
+            apiKeyModal.addEventListener('click', function(e) {
+                if (e.target === apiKeyModal) {
+                    apiKeyModal.classList.add('hidden');
+                }
+            });
+            
+            saveApiKey.addEventListener('click', function() {
+                const glm5Key = glm5ApiKeyInput.value.trim();
+                const otherKey = otherApiKeyInput.value.trim();
+                
+                if (!glm5Key) {
+                    alert('请输入GLM-5的API密钥');
+                    return;
+                }
+                
+                saveEncryptedApiKey('GLM-5', glm5Key);
+                
+                if (otherKey) {
+                    saveEncryptedApiKey('other', otherKey);
+                }
+                
+                alert('API密钥已安全保存');
+                apiKeyModal.classList.add('hidden');
+            });
             
             // 文件上传处理
             fileUpload.addEventListener('change', function(e) {
@@ -395,17 +769,21 @@
                 updateFileList();
             }
             
-            // 使用Dify API分析文件
             async function analyzeFileWithDify(fileObj) {
                 try {
-                    // 加载模型配置
+                    const apiKey = getDecryptedApiKey('GLM-5');
+                    
+                    if (!apiKey) {
+                        addMessage('ai', 'GLM-5模型需要API密钥。请点击右上角的"API密钥设置"按钮配置您的GLM-5 API密钥。');
+                        return;
+                    }
+                    
                     const savedConfig = localStorage.getItem('modelConfig');
                     const config = savedConfig ? JSON.parse(savedConfig) : {
                         apiBaseUrl: 'http://localhost:8004/api',
-                        apiKey: 'app-qO8Kt1njhD0BQkHzyQIklW8Z'
+                        apiKey: apiKey
                     };
                     
-                    // 准备请求数据
                     const requestData = {
                         inputs: {},
                         query: `请分析并总结文件 ${fileObj.name} 的内容`,
@@ -419,23 +797,20 @@
                         }]
                     };
                     
-                    // 发送请求到Dify API
                     const response = await fetch(`${config.apiBaseUrl}/chat-messages`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${config.apiKey}`
+                            'Authorization': `Bearer ${apiKey}`
                         },
                         body: JSON.stringify(requestData)
                     });
                     
                     if (response.ok) {
                         const data = await response.json();
-                        // 保存对话ID
                         if (data.conversation_id) {
                             localStorage.setItem('conversationId', data.conversation_id);
                         }
-                        // 显示AI回复（文件摘要）
                         addMessage('ai', data.answer);
                     } else {
                         const errorData = await response.json().catch(() => ({}));
@@ -486,21 +861,19 @@
                 return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
             }
             
-            // 与文件对话
             window.chatWithFile = async function(fileId) {
                 const file = uploadedFiles.find(f => f.id === fileId);
                 if (file) {
                     addMessage('user', `我想了解文件 ${file.name} 的内容`);
                     
                     try {
-                        // 加载模型配置
-                        const savedConfig = localStorage.getItem('modelConfig');
-                        const config = savedConfig ? JSON.parse(savedConfig) : {
-                            apiBaseUrl: 'https://api.dify.ai/v1',
-                            apiKey: 'app-qO8Kt1njhD0BQkHzyQIklW8Z'
-                        };
+                        const apiKey = getDecryptedApiKey('GLM-5');
                         
-                        // 准备请求数据
+                        if (!apiKey) {
+                            addMessage('ai', 'GLM-5模型需要API密钥。请点击右上角的"API密钥设置"按钮配置您的GLM-5 API密钥。');
+                            return;
+                        }
+                        
                         const requestData = {
                             inputs: {},
                             query: `请分析并详细解释文件 ${file.name} 的内容`,
@@ -514,23 +887,21 @@
                         }]
                         };
                         
-                        // 发送请求到Dify API
-                        const response = await fetch(`${config.apiBaseUrl}/chat-messages`, {
+                        const response = await fetch(`http://localhost:8004/api/chat-messages`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${config.apiKey}`
+                                'Authorization': `Bearer ${apiKey}`
                             },
                             body: JSON.stringify(requestData)
                         });
                         
                         if (response.ok) {
                             const data = await response.json();
-                            // 保存对话ID
                             if (data.conversation_id) {
                                 localStorage.setItem('conversationId', data.conversation_id);
                             }
-                            // 显示AI回复
+                            // 显示 AI 回复
                             addMessage('ai', data.answer);
                         } else {
                             throw new Error('文件分析失败');
@@ -590,25 +961,49 @@
             function sendMessage() {
                 const message = chatInput.value.trim();
                 if (message) {
-                    addMessage('user', message);
+                    let actualMessage = message;
+                    let selectedModel = 'GLM-5';
+                    
+                    if (message.includes('/')) {
+                        const parts = message.split('/');
+                        if (parts.length >= 2) {
+                            selectedModel = parts[0].trim();
+                            actualMessage = parts.slice(1).join('/').trim();
+                        }
+                    }
+                    
+                    if (!actualMessage) {
+                        alert('请输入要发送的内容');
+                        return;
+                    }
+                    
+                    addMessage('user', `[${selectedModel}] ${actualMessage}`);
                     chatInput.value = '';
                     
-                    // 调用Dify API获取回复
-                    callDifyAPI(message);
+                    callDifyAPI(actualMessage, selectedModel);
                 }
             }
             
-            // 调用Dify API
-            async function callDifyAPI(message) {
+            async function callDifyAPI(message, selectedModel = 'GLM-5') {
                 try {
-                    // 加载模型配置
+                    let apiKey = getDecryptedApiKey(selectedModel);
+                    
+                    if (!apiKey) {
+                        if (selectedModel === 'GLM-5') {
+                            addMessage('ai', 'GLM-5模型需要API密钥。请点击右上角的"API密钥设置"按钮配置您的GLM-5 API密钥。');
+                            return;
+                        } else {
+                            addMessage('ai', `${selectedModel}模型需要API密钥。请点击右上角的"API密钥设置"按钮配置API密钥。`);
+                            return;
+                        }
+                    }
+                    
                     const savedConfig = localStorage.getItem('modelConfig');
                     const config = savedConfig ? JSON.parse(savedConfig) : {
                         apiBaseUrl: 'http://localhost:8004/api',
-                        apiKey: 'app-qO8Kt1njhD0BQkHzyQIklW8Z'
+                        apiKey: apiKey
                     };
                     
-                    // 准备请求数据
                     const requestData = {
                         inputs: {},
                         query: message,
@@ -617,23 +1012,20 @@
                         user: 'user-' + Date.now()
                     };
                     
-                    // 发送请求到Dify API
                     const response = await fetch(`${config.apiBaseUrl}/chat-messages`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${config.apiKey}`
+                            'Authorization': `Bearer ${apiKey}`
                         },
                         body: JSON.stringify(requestData)
                     });
                     
                     if (response.ok) {
                         const data = await response.json();
-                        // 保存对话ID
                         if (data.conversation_id) {
                             localStorage.setItem('conversationId', data.conversation_id);
                         }
-                        // 显示AI回复
                         addMessage('ai', data.answer);
                     } else {
                         const errorData = await response.json().catch(() => ({}));
@@ -645,26 +1037,28 @@
                 }
             }
             
-            // 上传文件到Dify
             async function uploadFileToDify(file) {
                 try {
-                    // 加载模型配置
+                    const apiKey = getDecryptedApiKey('GLM-5');
+                    
+                    if (!apiKey) {
+                        throw new Error('需要API密钥');
+                    }
+                    
                     const savedConfig = localStorage.getItem('modelConfig');
                     const config = savedConfig ? JSON.parse(savedConfig) : {
                         apiBaseUrl: 'http://localhost:8004/api',
-                        apiKey: 'app-qO8Kt1njhD0BQkHzyQIklW8Z'
+                        apiKey: apiKey
                     };
                     
-                    // 创建FormData
                     const formData = new FormData();
                     formData.append('file', file);
                     formData.append('user', 'user-' + Date.now());
                     
-                    // 发送文件上传请求
                     const response = await fetch(`${config.apiBaseUrl}/files/upload`, {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${config.apiKey}`
+                            'Authorization': `Bearer ${apiKey}`
                         },
                         body: formData
                     });
@@ -702,7 +1096,6 @@
                 alert('表单已清空');
             });
             
-            // 提交问题
             submitIssueBtn.addEventListener('click', function() {
                 const title = issueTitle.value.trim();
                 const type = issueType.value;
@@ -713,7 +1106,6 @@
                     return;
                 }
                 
-                // 构建问题信息
                 const issueInfo = {
                     title: title,
                     type: type,
@@ -721,100 +1113,16 @@
                     files: uploadedFiles.map(file => file.name)
                 };
                 
-                // 将问题信息发送到聊天界面
-                addMessage('user', `问题提交：\n标题：${title}\n类型：${type === 'installation' ? '安装升级问题' : '运维问题'}\n描述：${description}\n已上传文件：${uploadedFiles.length > 0 ? uploadedFiles.map(file => file.name).join(', ') : '无'}`);
+                addMessage('user', `[GLM-5] 问题提交：\n标题：${title}\n类型：${type === 'installation' ? '安装升级问题' : '运维问题'}\n描述：${description}\n已上传文件：${uploadedFiles.length > 0 ? uploadedFiles.map(file => file.name).join(', ') : '无'}`);
                 
-                // 调用API获取回复
-                callDifyAPI(`请分析以下问题：\n标题：${title}\n类型：${type === 'installation' ? '安装升级问题' : '运维问题'}\n描述：${description}`);
+                callDifyAPI(`请分析以下问题：\n标题：${title}\n类型：${type === 'installation' ? '安装升级问题' : '运维问题'}\n描述：${description}`, 'GLM-5');
                 
-                // 清空表单
                 issueTitle.value = '';
                 issueType.value = 'installation';
                 issueDescription.value = '';
                 uploadedFiles = [];
                 updateFileList();
             });
-            
-            // 模型选择下拉框事件
-            modelSelector.addEventListener('change', function() {
-                if (this.value === 'add-model') {
-                    // 打开新增模型模态框
-                    addModelModal.classList.remove('hidden');
-                    // 重置选择框到默认选项
-                    this.value = 'dify';
-                }
-            });
-            
-            // 关闭新增模型模态框
-            function closeAddModelModalFunc() {
-                addModelModal.classList.add('hidden');
-                // 清空表单
-                document.getElementById('new-model-name').value = '';
-                document.getElementById('new-model-type').value = 'openai';
-                document.getElementById('new-model-api-url').value = '';
-                document.getElementById('new-model-api-key').value = '';
-            }
-            
-            closeAddModelModal.addEventListener('click', closeAddModelModalFunc);
-            cancelAddModel.addEventListener('click', closeAddModelModalFunc);
-            
-            // 点击模态框外部关闭
-            addModelModal.addEventListener('click', function(e) {
-                if (e.target === addModelModal) {
-                    closeAddModelModalFunc();
-                }
-            });
-            
-            // 保存新模型
-            saveNewModel.addEventListener('click', function() {
-                const modelName = document.getElementById('new-model-name').value.trim();
-                const modelType = document.getElementById('new-model-type').value;
-                const apiUrl = document.getElementById('new-model-api-url').value.trim();
-                const apiKey = document.getElementById('new-model-api-key').value.trim();
-                
-                if (!modelName || !apiKey) {
-                    alert('请填写模型名称和API密钥');
-                    return;
-                }
-                
-                // 创建新模型选项
-                const newOption = document.createElement('option');
-                newOption.value = modelName.toLowerCase().replace(/\s+/g, '-');
-                newOption.textContent = `${modelName} (${modelType})`;
-                
-                // 插入到"新增模型"选项之前
-                const addModelOption = modelSelector.querySelector('option[value="add-model"]');
-                modelSelector.insertBefore(newOption, addModelOption);
-                
-                // 保存模型配置到本地存储
-                let models = JSON.parse(localStorage.getItem('customModels') || '[]');
-                models.push({
-                    name: modelName,
-                    type: modelType,
-                    apiUrl: apiUrl,
-                    apiKey: apiKey
-                });
-                localStorage.setItem('customModels', JSON.stringify(models));
-                
-                alert('模型添加成功！');
-                closeAddModelModalFunc();
-            });
-            
-            // 加载自定义模型
-            function loadCustomModels() {
-                const models = JSON.parse(localStorage.getItem('customModels') || '[]');
-                const addModelOption = modelSelector.querySelector('option[value="add-model"]');
-                
-                models.forEach(model => {
-                    const newOption = document.createElement('option');
-                    newOption.value = model.name.toLowerCase().replace(/\s+/g, '-');
-                    newOption.textContent = `${model.name} (${model.type})`;
-                    modelSelector.insertBefore(newOption, addModelOption);
-                });
-            }
-            
-            // 初始化加载自定义模型
-            loadCustomModels();
         });
     </script>
 </body>
