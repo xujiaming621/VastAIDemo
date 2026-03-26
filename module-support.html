@@ -171,6 +171,89 @@
             scrollbar-width: thin;
             scrollbar-color: #c1c1c1 #f1f1f1;
         }
+        
+        .chat-file-item {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            background: #f0f5ff;
+            border: 1px solid #d6e4ff;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #165DFF;
+            white-space: nowrap;
+            max-width: 150px;
+        }
+        .chat-file-item:hover {
+            background: #e6f0ff;
+        }
+        .chat-file-item .file-icon {
+            flex-shrink: 0;
+        }
+        .chat-file-item .file-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .chat-file-item .remove-btn {
+            flex-shrink: 0;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            cursor: pointer;
+            color: #86909c;
+            transition: all 0.2s;
+        }
+        .chat-file-item .remove-btn:hover {
+            background: #f53f3f;
+            color: white;
+        }
+        .chat-file-item.is-image {
+            background: #fff7e6;
+            border-color: #ffd591;
+            color: #ff7d00;
+        }
+        .chat-file-item.is-image:hover {
+            background: #fff1d6;
+        }
+        
+        .message-files {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #e5e7eb;
+        }
+        .message-files-title {
+            font-size: 11px;
+            color: #86909c;
+            margin-bottom: 6px;
+        }
+        .message-file-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: #f7f8fa;
+            border: 1px solid #e5e6eb;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #1d2129;
+            margin-right: 8px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .message-file-item:hover {
+            background: #f0f5ff;
+            border-color: #165DFF;
+            color: #165DFF;
+        }
+        .message-file-item .file-icon {
+            color: #165DFF;
+        }
     </style>
 </head>
 <body class="bg-neutral min-h-screen">
@@ -206,6 +289,7 @@
                     <select id="issue-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
                         <option value="installation">安装升级问题</option>
                         <option value="operation">运维问题</option>
+                        <option value="exbase" selected>Exbase迁移问题</option>
                     </select>
                 </div>
                 
@@ -261,6 +345,16 @@
                 <h2 class="text-xl font-bold flex items-center">
                     <i class="fa fa-comments-o text-primary mr-2"></i>智能对话
                 </h2>
+                <div class="flex items-center gap-2">
+                    <button id="reset-conversation-btn" class="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-red-50 hover:border-red-300 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-colors">
+                        <i class="fa fa-refresh"></i>
+                        <span>新对话</span>
+                    </button>
+                    <button id="export-report-btn" class="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors">
+                        <i class="fa fa-file-text-o"></i>
+                        <span>报告导出</span>
+                    </button>
+                </div>
             </div>
                     
                     <div class="flex-1 border border-gray-200 rounded-lg overflow-hidden flex flex-col">
@@ -309,6 +403,9 @@
                                         <i class="fa fa-paperclip"></i>
                                         <span>上传文件</span>
                                     </button>
+                                    <div id="chat-file-preview" class="flex-1 flex items-center gap-2 overflow-x-auto hidden">
+                                        <div id="chat-file-list" class="flex items-center gap-2"></div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="flex gap-2">
@@ -351,8 +448,9 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">API 基础地址</label>
-                    <input type="text" id="api-base-url" value="http://localhost:8004/api" 
+                    <input type="text" id="api-base-url" value="https://api.dify.ai/v1" 
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <p class="text-xs text-gray-500 mt-1">Dify官方地址: https://api.dify.ai/v1</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">温度参数</label>
@@ -373,48 +471,117 @@
     
     <!-- 新增模型模态框 -->
     <div id="add-model-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+        <div class="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-primary">新增模型</h3>
                 <button id="close-add-model-modal" class="text-gray-500 hover:text-gray-700">
                     <i class="fa fa-times text-xl"></i>
                 </button>
             </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">模型名称 <span class="text-red-500">*</span></label>
-                    <input type="text" id="model-name" placeholder="请输入模型自定义名称" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">模型类型 <span class="text-red-500">*</span></label>
-                    <select id="model-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
-                        <option value="dify-api">Dify API</option>
-                        <option value="bigmodel">BigModel</option>
-                    </select>
-                </div>
-                <div id="bigmodel-specific-fields" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">选用模型 <span class="text-red-500">*</span></label>
-                        <select id="bigmodel-select" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
-                            <option value="glm-5">GLM-5</option>
-                            <option value="glm-4.7">GLM-4.7</option>
-                            <option value="glm-4v">GLM-4V（多模态）</option>
-                        </select>
+            
+            <!-- Tab 切换 -->
+            <div class="flex border-b border-gray-200 mb-4">
+                <button id="tab-glm" class="flex-1 py-3 text-center font-medium border-b-2 border-primary text-primary transition-colors">
+                    <i class="fa fa-cube mr-2"></i>GLM 配置
+                </button>
+                <button id="tab-dify" class="flex-1 py-3 text-center font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors">
+                    <i class="fa fa-plug mr-2"></i>Dify 配置
+                </button>
+            </div>
+            
+            <!-- GLM 配置面板 -->
+            <div id="panel-glm" class="space-y-4">
+                <div class="bg-blue-50 rounded-lg p-3 mb-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-blue-700"><i class="fa fa-info-circle mr-1"></i>GLM 是智谱AI提供的大语言模型服务</span>
+                        <a href="https://open.bigmodel.cn/overview" target="_blank" class="text-sm text-blue-600 hover:underline">
+                            <i class="fa fa-external-link mr-1"></i>官方文档
+                        </a>
                     </div>
                 </div>
+                
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">API 密钥 <span class="text-red-500">*</span></label>
-                    <input type="password" id="new-model-api-key" placeholder="请输入API密钥" 
+                    <label class="block text-sm font-medium text-gray-700 mb-1">模型名称 <span class="text-red-500">*</span></label>
+                    <input type="text" id="glm-model-name" placeholder="请输入模型自定义名称，如：我的GLM-5" 
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
                 </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">选用模型 <span class="text-red-500">*</span></label>
+                    <select id="glm-model-select" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
+                        <option value="glm-5">GLM-5</option>
+                        <option value="glm-4.7">GLM-4.7</option>
+                        <option value="glm-4v">GLM-4V（多模态）</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">API Key <span class="text-red-500">*</span></label>
+                    <input type="password" id="glm-api-key" placeholder="请输入智谱AI API Key" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <p class="text-xs text-gray-500 mt-1">从智谱AI开放平台获取: https://open.bigmodel.cn</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Base URL</label>
+                    <input type="text" id="glm-base-url" value="https://open.bigmodel.cn/api/coding/paas/v4" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <p class="text-xs text-gray-500 mt-1">智谱AI官方API地址（通常无需修改）</p>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button id="test-glm-connection" class="flex-1 px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors">
+                        <i class="fa fa-plug mr-2"></i>检测连通性
+                    </button>
+                </div>
+                <div id="glm-test-result" class="hidden rounded-lg p-3 text-sm"></div>
             </div>
-            <div class="flex justify-end gap-3 mt-6">
+            
+            <!-- Dify 配置面板 -->
+            <div id="panel-dify" class="space-y-4 hidden">
+                <div class="bg-green-50 rounded-lg p-3 mb-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-green-700"><i class="fa fa-info-circle mr-1"></i>Dify 是开源的 LLM 应用开发平台</span>
+                        <a href="https://docs.dify.ai/" target="_blank" class="text-sm text-green-600 hover:underline">
+                            <i class="fa fa-external-link mr-1"></i>官方文档
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">模型名称 <span class="text-red-500">*</span></label>
+                    <input type="text" id="dify-model-name" placeholder="请输入模型自定义名称，如：我的Dify应用" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">API Key <span class="text-red-500">*</span></label>
+                    <input type="password" id="dify-api-key" placeholder="请输入 Dify API Key" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <p class="text-xs text-gray-500 mt-1">在 Dify 应用的 API 设置中获取</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Base URL</label>
+                    <input type="text" id="dify-base-url" value="https://api.dify.ai/v1" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <p class="text-xs text-gray-500 mt-1">Dify API 地址（私有部署时需要修改）</p>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button id="test-dify-connection" class="flex-1 px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors">
+                        <i class="fa fa-plug mr-2"></i>检测连通性
+                    </button>
+                </div>
+                <div id="dify-test-result" class="hidden rounded-lg p-3 text-sm"></div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
                 <button id="cancel-add-model" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">
                     取消
                 </button>
                 <button id="save-new-model" class="btn-primary px-4 py-2">
-                    保存模型
+                    <i class="fa fa-save mr-2"></i>保存模型
                 </button>
             </div>
         </div>
@@ -434,6 +601,149 @@
     <!-- 功能脚本 -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // ==================== 全局状态管理 ====================
+            const AppState = {
+                conversationId: null,
+                userId: null,
+                bigmodelConversationHistory: [],
+                STORAGE_KEY: 'dify_conversationId',
+                USER_ID_KEY: 'dify_userId',
+                TIMESTAMP_KEY: 'dify_conversationId_timestamp',
+                SESSION_TIMEOUT: 30 * 60 * 1000,
+                
+                init() {
+                    this.conversationId = this.getValidConversationId();
+                    this.userId = this.getOrCreateUserId();
+                    this.bigmodelConversationHistory = JSON.parse(sessionStorage.getItem('bigmodel_conversation_history') || '[]');
+                    this.setupVisibilityHandler();
+                },
+                
+                getOrCreateUserId() {
+                    let id = localStorage.getItem(this.USER_ID_KEY);
+                    if (!id) {
+                        id = 'user-' + Math.random().toString(36).substring(2, 15) + Date.now();
+                        localStorage.setItem(this.USER_ID_KEY, id);
+                        console.log('[AppState] 生成新用户ID:', id);
+                    }
+                    return id;
+                },
+                
+                getUserId() {
+                    return this.userId;
+                },
+                
+                getValidConversationId() {
+                    let storedId = sessionStorage.getItem(this.STORAGE_KEY);
+                    let storedTimestamp = sessionStorage.getItem(this.TIMESTAMP_KEY);
+                    
+                    if (storedId && storedTimestamp) {
+                        const elapsed = Date.now() - parseInt(storedTimestamp, 10);
+                        if (elapsed > this.SESSION_TIMEOUT) {
+                            console.log('[AppState] 会话已过期，清除旧会话ID');
+                            this.clearConversationId();
+                            return null;
+                        }
+                        console.log('[AppState] 恢复有效会话ID，剩余时间:', Math.round((this.SESSION_TIMEOUT - elapsed) / 1000 / 60), '分钟');
+                        return storedId;
+                    }
+                    return null;
+                },
+                
+                setupVisibilityHandler() {
+                    document.addEventListener('visibilitychange', () => {
+                        if (document.visibilityState === 'visible') {
+                            if (this.conversationId && !sessionStorage.getItem(this.STORAGE_KEY)) {
+                                this.conversationId = null;
+                                console.log('[AppState] 页面恢复可见，检测到会话已被清除');
+                            }
+                        }
+                    });
+                },
+                
+                isSessionExpired() {
+                    let storedTimestamp = sessionStorage.getItem(this.TIMESTAMP_KEY);
+                    if (!storedTimestamp) return true;
+                    return (Date.now() - parseInt(storedTimestamp, 10)) > this.SESSION_TIMEOUT;
+                },
+                
+                resetConversation() {
+                    this.conversationId = null;
+                    sessionStorage.removeItem(this.STORAGE_KEY);
+                    sessionStorage.removeItem(this.TIMESTAMP_KEY);
+                    this.bigmodelConversationHistory = [];
+                    sessionStorage.removeItem('bigmodel_conversation_history');
+                    return this.conversationId;
+                },
+                
+                getConversationId() {
+                    if (this.conversationId && this.isSessionExpired()) {
+                        console.log('[AppState] 获取会话ID时发现已过期，清除');
+                        this.clearConversationId();
+                        return null;
+                    }
+                    return this.conversationId;
+                },
+                
+                updateConversationId(newId) {
+                    this.conversationId = newId;
+                    sessionStorage.setItem(this.STORAGE_KEY, newId);
+                    sessionStorage.setItem(this.TIMESTAMP_KEY, Date.now().toString());
+                    console.log('[AppState] 更新会话ID:', newId);
+                },
+                
+                clearConversationId() {
+                    this.conversationId = null;
+                    sessionStorage.removeItem(this.STORAGE_KEY);
+                    sessionStorage.removeItem(this.TIMESTAMP_KEY);
+                },
+                
+                refreshTimestamp() {
+                    if (this.conversationId) {
+                        sessionStorage.setItem(this.TIMESTAMP_KEY, Date.now().toString());
+                    }
+                },
+                
+                saveBigModelHistory(history) {
+                    this.bigmodelConversationHistory = history;
+                    sessionStorage.setItem('bigmodel_conversation_history', JSON.stringify(history));
+                },
+                
+                getBigModelHistory() {
+                    return this.bigmodelConversationHistory;
+                }
+            };
+            
+            AppState.init();
+            
+            // ==================== 错误处理助手 ====================
+            function getFriendlyErrorMessage(errorMsg) {
+                if (!errorMsg) return '抱歉，系统出现了未知错误，请稍后再试。';
+                
+                const msgStr = typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg);
+                
+                // 速率限制相关 (针对 429 或 1302 错误)
+                if (msgStr.includes('429') || msgStr.includes('1302') || msgStr.includes('速率限制') || msgStr.includes('rate limit')) {
+                    return '【请求过于频繁】您的 AI 接口调用已达到速率限制。请稍等 1-2 分钟后再尝试，或检查您的账户额度。';
+                }
+                
+                // 超时相关
+                if (msgStr.includes('AbortError') || msgStr.includes('超时') || msgStr.includes('timeout')) {
+                    return '【请求超时】AI 思考时间过长（已超过300秒），请尝试简化您的问题或稍后重试。';
+                }
+                
+                // 网络连接相关
+                if (msgStr.includes('Failed to fetch') || msgStr.includes('NetworkError') || msgStr.includes('无法连接')) {
+                    return '【网络连接失败】无法连接到 AI 服务。请检查您的网络状态、API 基础地址或跨域设置。';
+                }
+
+                // 认证相关
+                if (msgStr.includes('401') || msgStr.includes('Unauthorized') || msgStr.includes('API密钥未配置')) {
+                    return '【认证失败】API 密钥无效或未配置。请在“模型管理”中检查并重新配置您的 API Key。';
+                }
+
+                return `抱歉，调用服务时出现错误：${msgStr}`;
+            }
+
             // 全局变量
             let uploadedFiles = [];
             
@@ -556,6 +866,287 @@
             updateFileList();
             loadModelList();
             
+            // ==================== 重置对话功能 ====================
+            const resetConversationBtn = document.getElementById('reset-conversation-btn');
+            
+            function resetConversation() {
+                if (!confirm('确定要开始新对话吗？这将清空当前会话的所有消息和文件。')) {
+                    return;
+                }
+                
+                AppState.resetConversation();
+                
+                uploadedFiles = [];
+                updateFileList();
+                
+                chatMessages.innerHTML = `
+                    <div class="chat-bubble-ai">
+                        <div class="flex items-center mb-2">
+                            <i class="fa fa-robot text-primary mr-2"></i>
+                            <span class="text-xs font-medium">vastbase 智能助手 - 量仔</span>
+                            <span class="text-xs text-gray-500 ml-2"></span>
+                        </div>
+                        <p>我是 vastbase 智能助手 - 量仔。我可以帮助用户：1. 基于用户上传的文件、历史对话内容，进行问题诊断与分析。2. 针对诊断结果，生成清晰、可落地的解决方案。</p>
+                    </div>
+                `;
+                
+                const welcomeMessageTime = chatMessages.querySelector('.chat-bubble-ai .text-gray-500');
+                if (welcomeMessageTime) {
+                    const now = new Date();
+                    const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+                    welcomeMessageTime.textContent = time;
+                }
+                
+                lastMessageTime = '';
+                
+                issueTitle.value = '';
+                issueType.value = 'exbase';
+                issueDescription.value = '';
+                uploadedFiles = [];
+                updateFileList();
+                updateChatFilePreview();
+                
+                chatInput.focus();
+                
+                showToast('success', '已开始新对话');
+            }
+            
+            function showToast(type, message) {
+                const existingToast = document.getElementById('custom-toast');
+                if (existingToast) existingToast.remove();
+                
+                const toast = document.createElement('div');
+                toast.id = 'custom-toast';
+                toast.className = `fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 transition-opacity duration-500 ${
+                    type === 'success' ? 'bg-green-500 text-white' : 
+                    type === 'error' ? 'bg-red-500 text-white' : 
+                    'bg-blue-500 text-white'
+                }`;
+                toast.innerHTML = `
+                    <i class="fa ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                    <span>${message}</span>
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 500);
+                }, 3000);
+            }
+            
+            resetConversationBtn.addEventListener('click', resetConversation);
+            
+            // ==================== 报告导出功能 ====================
+            const exportReportBtn = document.getElementById('export-report-btn');
+            
+            async function exportReport() {
+                const conversationHistory = AppState.getBigModelHistory();
+                
+                if (conversationHistory.length === 0) {
+                    showToast('error', '当前对话为空，无法生成报告');
+                    return;
+                }
+                
+                let contextContent = '';
+                conversationHistory.forEach((msg, index) => {
+                    const role = msg.role === 'user' ? '用户' : '助手';
+                    contextContent += `### ${role} (${index + 1})\n${msg.content}\n\n`;
+                });
+                
+                const uploadedFilesInfo = uploadedFiles.map(f => `- ${f.name} (${formatFileSize(f.size)})`).join('\n');
+                
+                const reportPrompt = `请基于以下完整的对话上下文，生成一份结构化的分析报告。报告需要使用Markdown格式，包含以下部分：
+
+1. **问题概述**：总结用户遇到的主要问题或需求
+2. **对话摘要**：概括对话的主要内容和进展
+3. **关键发现**：列出在诊断过程中发现的关键信息
+4. **解决方案**：提供详细的可执行解决方案
+5. **建议与后续步骤**：给出后续建议和注意事项
+
+---
+
+## 对话上下文
+
+${contextContent}
+
+---
+
+## 已上传文件
+
+${uploadedFilesInfo || '无'}
+
+---
+
+请生成完整的分析报告：`;
+
+                showToast('success', '正在生成报告，请稍候...');
+                showThinkingBubble();
+                
+                addMessage('user', '📊 生成对话分析报告');
+                
+                const models = getModels();
+                const modelConfig = models.find(m => m.name === currentModel);
+                if (!modelConfig) {
+                    addMessage('ai', '抱歉，未找到当前模型配置，无法生成报告。');
+                    return;
+                }
+                
+                try {
+                    const apiKey = modelConfig.apiKey;
+                    if (!apiKey) {
+                        throw new Error('API密钥未配置');
+                    }
+                    
+                    const isGLM = modelConfig.type === 'bigmodel';
+                    let reportContent;
+                    
+                    if (isGLM) {
+                        const modelMap = {
+                            'glm-5': 'glm-5',
+                            'glm-4.7': 'glm-4.7v',
+                            'glm-4v': 'glm-4v'
+                        };
+                        
+                        const modelName = modelMap[modelConfig.bigmodel] || 'glm-5';
+                        const apiUrl = 'https://open.bigmodel.cn/api/coding/paas/v4/chat/completions';
+                        
+                        const requestData = {
+                            model: modelName,
+                            messages: [
+                                {
+                                    role: 'system',
+                                    content: '你是一个专业的技术支持报告撰写助手。请根据用户提供的对话上下文，生成结构清晰、内容详实的Markdown格式分析报告。报告应该专业、准确、易于理解。'
+                                },
+                                {
+                                    role: 'user',
+                                    content: reportPrompt
+                                }
+                            ]
+                        };
+                        
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => {
+                            controller.abort();
+                            console.error('[exportReport] 请求超时 (300秒)');
+                        }, 300000);
+
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${apiKey}`
+                            },
+                            body: JSON.stringify(requestData),
+                            signal: controller.signal
+                        });
+                        
+                        clearTimeout(timeoutId);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            reportContent = data.choices && data.choices[0] && data.choices[0].message 
+                                ? data.choices[0].message.content 
+                                : '抱歉，报告生成失败。';
+                        } else {
+                            const errorData = await response.json().catch(() => ({}));
+                            const errorMsg = errorData.error && errorData.error.message 
+                                ? errorData.error.message 
+                                : response.statusText;
+                            throw new Error(`API请求失败: ${errorMsg}`);
+                        }
+                    } else {
+                        let apiBaseUrl = modelConfig.apiBaseUrl || 'https://api.dify.ai/v1';
+                        if (!apiBaseUrl.endsWith('/v1') && !apiBaseUrl.includes('/v1/')) {
+                            apiBaseUrl = apiBaseUrl.replace(/\/$/, '') + '/v1';
+                        }
+                        
+                        const requestData = {
+                            inputs: {},
+                            query: reportPrompt,
+                            response_mode: 'blocking',
+                            user: 'user-' + Date.now()
+                        };
+                        
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => {
+                            controller.abort();
+                            console.error('[exportReport] Dify请求超时 (300秒)');
+                        }, 300000);
+                        
+                        const response = await fetch(`${apiBaseUrl}/chat-messages`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${apiKey}`
+                            },
+                            body: JSON.stringify(requestData),
+                            signal: controller.signal
+                        });
+                        
+                        clearTimeout(timeoutId);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            reportContent = data.answer || '抱歉，报告生成失败。';
+                            
+                            if (data.conversation_id) {
+                                AppState.updateConversationId(data.conversation_id);
+                            }
+                        } else {
+                            const errorData = await response.json().catch(() => ({}));
+                            const errorMsg = errorData.message || errorData.error?.message || response.statusText;
+                            throw new Error(`Dify API请求失败: ${errorMsg}`);
+                        }
+                    }
+                    
+                    removeThinkingBubble();
+                    
+                    const now = new Date();
+                    const timestamp = now.toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    const fullReport = `# 对话分析报告
+
+**生成时间**: ${timestamp}  
+**使用模型**: ${currentModel}
+
+---
+
+${reportContent}
+
+---
+*本报告由 VastBase 智能助手自动生成*
+`;
+                    
+                    const blob = new Blob([fullReport], { type: 'text/markdown;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `对话分析报告_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}.md`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    addMessage('ai', `✅ 报告已生成并下载！\n\n报告包含以下内容：\n- 问题概述\n- 对话摘要\n- 关键发现\n- 解决方案\n- 建议与后续步骤\n\n文件已保存为Markdown格式，您可以使用任何Markdown阅读器或编辑器查看。`);
+                    
+                    showToast('success', '报告已生成并下载');
+                } catch (error) {
+                    console.error('生成报告失败:', error);
+                    removeThinkingBubble();
+                    const userMessage = getFriendlyErrorMessage(error.message);
+                    addMessage('ai', userMessage);
+                    showToast('error', '报告生成失败');
+                }
+            }
+            
+            exportReportBtn.addEventListener('click', exportReport);
+            
             // 模型管理事件监听器
             const modelSelectBtn = document.getElementById('model-select-btn');
             const modelSelectorPanel = document.getElementById('model-selector-panel');
@@ -564,8 +1155,140 @@
             const closeAddModelModal = document.getElementById('close-add-model-modal');
             const cancelAddModel = document.getElementById('cancel-add-model');
             const saveNewModel = document.getElementById('save-new-model');
-            const modelTypeSelect = document.getElementById('model-type');
-            const bigmodelSpecificFields = document.getElementById('bigmodel-specific-fields');
+            
+            // Tab 切换相关元素
+            const tabGlm = document.getElementById('tab-glm');
+            const tabDify = document.getElementById('tab-dify');
+            const panelGlm = document.getElementById('panel-glm');
+            const panelDify = document.getElementById('panel-dify');
+            let currentConfigType = 'glm';
+            
+            // Tab 切换函数
+            function switchTab(type) {
+                currentConfigType = type;
+                if (type === 'glm') {
+                    tabGlm.classList.add('border-primary', 'text-primary');
+                    tabGlm.classList.remove('border-transparent', 'text-gray-500');
+                    tabDify.classList.remove('border-green-600', 'text-green-600');
+                    tabDify.classList.add('border-transparent', 'text-gray-500');
+                    panelGlm.classList.remove('hidden');
+                    panelDify.classList.add('hidden');
+                } else {
+                    tabDify.classList.add('border-green-600', 'text-green-600');
+                    tabDify.classList.remove('border-transparent', 'text-gray-500');
+                    tabGlm.classList.remove('border-primary', 'text-primary');
+                    tabGlm.classList.add('border-transparent', 'text-gray-500');
+                    panelDify.classList.remove('hidden');
+                    panelGlm.classList.add('hidden');
+                }
+            }
+            
+            tabGlm.addEventListener('click', () => switchTab('glm'));
+            tabDify.addEventListener('click', () => switchTab('dify'));
+            
+            // 连通性检测 - GLM
+            const testGlmBtn = document.getElementById('test-glm-connection');
+            const glmTestResult = document.getElementById('glm-test-result');
+            
+            testGlmBtn.addEventListener('click', async function() {
+                const apiKey = document.getElementById('glm-api-key').value.trim();
+                const baseUrl = document.getElementById('glm-base-url').value.trim();
+                const modelName = document.getElementById('glm-model-select').value;
+                
+                if (!apiKey) {
+                    showTestResult(glmTestResult, false, '请先输入 API Key');
+                    return;
+                }
+                
+                testGlmBtn.disabled = true;
+                testGlmBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>检测中...';
+                
+                try {
+                    const apiUrl = baseUrl || 'https://open.bigmodel.cn/api/coding/paas/v4/chat/completions';
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: modelName,
+                            messages: [{ role: 'user', content: 'Hi' }],
+                            max_tokens: 5
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        showTestResult(glmTestResult, true, 'GLM 连接成功！API Key 有效');
+                    } else {
+                        const errorData = await response.json().catch(() => ({}));
+                        const errorMsg = errorData.error?.message || `HTTP ${response.status}`;
+                        showTestResult(glmTestResult, false, `连接失败: ${errorMsg}`);
+                    }
+                } catch (error) {
+                    showTestResult(glmTestResult, false, `连接失败: ${error.message}`);
+                } finally {
+                    testGlmBtn.disabled = false;
+                    testGlmBtn.innerHTML = '<i class="fa fa-plug mr-2"></i>检测连通性';
+                }
+            });
+            
+            // 连通性检测 - Dify
+            const testDifyBtn = document.getElementById('test-dify-connection');
+            const difyTestResult = document.getElementById('dify-test-result');
+            
+            testDifyBtn.addEventListener('click', async function() {
+                const apiKey = document.getElementById('dify-api-key').value.trim();
+                const baseUrl = document.getElementById('dify-base-url').value.trim();
+                
+                if (!apiKey) {
+                    showTestResult(difyTestResult, false, '请先输入 API Key');
+                    return;
+                }
+                
+                testDifyBtn.disabled = true;
+                testDifyBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>检测中...';
+                
+                try {
+                    let apiBaseUrl = baseUrl || 'https://api.dify.ai/v1';
+                    if (!apiBaseUrl.endsWith('/v1') && !apiBaseUrl.includes('/v1/')) {
+                        apiBaseUrl = apiBaseUrl.replace(/\/$/, '') + '/v1';
+                    }
+                    
+                    const response = await fetch(`${apiBaseUrl}/parameters`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${apiKey}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        showTestResult(difyTestResult, true, 'Dify 连接成功！API Key 有效');
+                    } else if (response.status === 404) {
+                        showTestResult(difyTestResult, true, 'Dify 连接成功（参数接口不可用，但可能有效）');
+                    } else {
+                        const errorData = await response.json().catch(() => ({}));
+                        const errorMsg = errorData.message || `HTTP ${response.status}`;
+                        showTestResult(difyTestResult, false, `连接失败: ${errorMsg}`);
+                    }
+                } catch (error) {
+                    showTestResult(difyTestResult, false, `连接失败: ${error.message}`);
+                } finally {
+                    testDifyBtn.disabled = false;
+                    testDifyBtn.innerHTML = '<i class="fa fa-plug mr-2"></i>检测连通性';
+                }
+            });
+            
+            function showTestResult(element, success, message) {
+                element.classList.remove('hidden');
+                if (success) {
+                    element.className = 'rounded-lg p-3 text-sm bg-green-50 text-green-700 border border-green-200';
+                    element.innerHTML = `<i class="fa fa-check-circle mr-2"></i>${message}`;
+                } else {
+                    element.className = 'rounded-lg p-3 text-sm bg-red-50 text-red-700 border border-red-200';
+                    element.innerHTML = `<i class="fa fa-exclamation-circle mr-2"></i>${message}`;
+                }
+            }
             
             // 模型选择按钮点击事件
             modelSelectBtn.addEventListener('click', function() {
@@ -606,15 +1329,9 @@
             addNewModelBtn.addEventListener('click', function() {
                 modelSelectorPanel.classList.add('hidden');
                 addModelModal.classList.remove('hidden');
-            });
-            
-            // 模型类型选择变化事件
-            modelTypeSelect.addEventListener('change', function() {
-                if (this.value === 'bigmodel') {
-                    bigmodelSpecificFields.classList.remove('hidden');
-                } else {
-                    bigmodelSpecificFields.classList.add('hidden');
-                }
+                switchTab('glm');
+                glmTestResult.classList.add('hidden');
+                difyTestResult.classList.add('hidden');
             });
             
             // 关闭新增模型弹窗
@@ -634,54 +1351,89 @@
             
             // 保存新模型
             saveNewModel.addEventListener('click', function() {
-                const modelName = document.getElementById('model-name').value.trim();
-                const modelType = document.getElementById('model-type').value;
-                const apiKey = document.getElementById('new-model-api-key').value.trim();
+                const modelType = currentConfigType;
+                let modelName, apiKey, modelData;
                 
-                if (!modelName) {
-                    alert('请输入模型名称');
-                    return;
-                }
-                
-                if (!apiKey) {
-                    alert('请输入API密钥');
-                    return;
-                }
-                
-                const modelData = {
-                    id: Date.now().toString(),
-                    name: modelName,
-                    type: modelType,
-                    apiKey: apiKey
-                };
-                
-                if (modelType === 'bigmodel') {
-                    modelData.bigmodel = document.getElementById('bigmodel-select').value;
+                if (modelType === 'glm') {
+                    modelName = document.getElementById('glm-model-name').value.trim();
+                    apiKey = document.getElementById('glm-api-key').value.trim();
+                    const bigmodel = document.getElementById('glm-model-select').value;
+                    const baseUrl = document.getElementById('glm-base-url').value.trim();
+                    
+                    if (!modelName) {
+                        alert('请输入模型名称');
+                        return;
+                    }
+                    
+                    if (!apiKey) {
+                        alert('请输入 API Key');
+                        return;
+                    }
+                    
+                    modelData = {
+                        id: Date.now().toString(),
+                        name: modelName,
+                        type: 'bigmodel',
+                        apiKey: apiKey,
+                        bigmodel: bigmodel
+                    };
+                    
+                    if (baseUrl) {
+                        modelData.apiBaseUrl = baseUrl;
+                    }
+                } else {
+                    modelName = document.getElementById('dify-model-name').value.trim();
+                    apiKey = document.getElementById('dify-api-key').value.trim();
+                    const baseUrl = document.getElementById('dify-base-url').value.trim();
+                    
+                    if (!modelName) {
+                        alert('请输入模型名称');
+                        return;
+                    }
+                    
+                    if (!apiKey) {
+                        alert('请输入 API Key');
+                        return;
+                    }
+                    
+                    modelData = {
+                        id: Date.now().toString(),
+                        name: modelName,
+                        type: 'dify-api',
+                        apiKey: apiKey
+                    };
+                    
+                    if (baseUrl) {
+                        modelData.apiBaseUrl = baseUrl;
+                    }
                 }
                 
                 saveModel(modelData);
-
-                // 关闭弹窗
                 addModelModal.classList.add('hidden');
-
-                // 立即更新模型列表
                 loadModelList();
-
-                // 自动打开模型选择面板，让用户看到新添加的模型
                 modelSelectorPanel.classList.remove('hidden');
-
+                
                 // 清空表单
-                document.getElementById('model-name').value = '';
-                document.getElementById('model-type').value = 'dify-api';
-                document.getElementById('new-model-api-key').value = '';
-                document.getElementById('bigmodel-select').value = 'glm-5';
-                bigmodelSpecificFields.classList.add('hidden');
+                document.getElementById('glm-model-name').value = '';
+                document.getElementById('glm-api-key').value = '';
+                document.getElementById('glm-base-url').value = '';
+                document.getElementById('glm-model-select').value = 'glm-5';
+                document.getElementById('dify-model-name').value = '';
+                document.getElementById('dify-api-key').value = '';
+                document.getElementById('dify-base-url').value = '';
+                glmTestResult.classList.add('hidden');
+                difyTestResult.classList.add('hidden');
             });
             
             // 文件上传处理
-            fileUpload.addEventListener('change', function(e) {
+            fileUpload.addEventListener('change', async function(e) {
                 if (this.files.length > 0) {
-                    handleFileUpload(this.files);
+                    try {
+                        await handleFileUpload(this.files);
+                    } catch (error) {
+                        console.error('文件上传处理失败:', error);
+                        alert('文件上传失败: ' + error.message);
+                    }
                 }
             });
             
@@ -697,11 +1449,16 @@
                 this.classList.remove('border-primary');
             });
             
-            dropArea.addEventListener('drop', function(e) {
+            dropArea.addEventListener('drop', async function(e) {
                 e.preventDefault();
                 this.classList.remove('border-primary');
                 if (e.dataTransfer.files.length > 0) {
-                    handleFileUpload(e.dataTransfer.files);
+                    try {
+                        await handleFileUpload(e.dataTransfer.files);
+                    } catch (error) {
+                        console.error('拖放文件处理失败:', error);
+                        alert('文件上传失败: ' + error.message);
+                    }
                 }
             });
             
@@ -712,6 +1469,60 @@
                 return imageTypes.includes(file.type) || 
                        file.name.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i);
             }
+            
+            function getFileIcon(fileName) {
+                const ext = fileName.split('.').pop().toLowerCase();
+                const iconMap = {
+                    'pdf': 'fa-file-pdf-o',
+                    'doc': 'fa-file-word-o', 'docx': 'fa-file-word-o',
+                    'xls': 'fa-file-excel-o', 'xlsx': 'fa-file-excel-o',
+                    'ppt': 'fa-file-powerpoint-o', 'pptx': 'fa-file-powerpoint-o',
+                    'jpg': 'fa-file-image-o', 'jpeg': 'fa-file-image-o', 'png': 'fa-file-image-o', 
+                    'gif': 'fa-file-image-o', 'webp': 'fa-file-image-o', 'bmp': 'fa-file-image-o', 'svg': 'fa-file-image-o',
+                    'zip': 'fa-file-archive-o', 'rar': 'fa-file-archive-o', '7z': 'fa-file-archive-o', 'tar': 'fa-file-archive-o', 'gz': 'fa-file-archive-o',
+                    'mp3': 'fa-file-audio-o', 'wav': 'fa-file-audio-o', 'flac': 'fa-file-audio-o',
+                    'mp4': 'fa-file-video-o', 'avi': 'fa-file-video-o', 'mov': 'fa-file-video-o', 'mkv': 'fa-file-video-o',
+                    'txt': 'fa-file-text-o', 'log': 'fa-file-text-o',
+                    'js': 'fa-file-code-o', 'ts': 'fa-file-code-o', 'py': 'fa-file-code-o', 'java': 'fa-file-code-o',
+                    'c': 'fa-file-code-o', 'cpp': 'fa-file-code-o', 'h': 'fa-file-code-o', 'css': 'fa-file-code-o',
+                    'html': 'fa-file-code-o', 'json': 'fa-file-code-o', 'xml': 'fa-file-code-o', 'sql': 'fa-file-code-o'
+                };
+                return iconMap[ext] || 'fa-file-o';
+            }
+            
+            function updateChatFilePreview() {
+                const container = document.getElementById('chat-file-preview');
+                const list = document.getElementById('chat-file-list');
+                if (!container || !list) return;
+                
+                if (uploadedFiles.length === 0) {
+                    container.classList.add('hidden');
+                    list.innerHTML = '';
+                    return;
+                }
+                
+                container.classList.remove('hidden');
+                list.innerHTML = uploadedFiles.map(file => {
+                    const isImg = isImageFile(file.file);
+                    const icon = getFileIcon(file.name);
+                    const itemClass = isImg ? 'chat-file-item is-image' : 'chat-file-item';
+                    return `
+                        <div class="${itemClass}" data-file-id="${file.id}" title="${file.name}">
+                            <span class="file-icon"><i class="fa ${icon}"></i></span>
+                            <span class="file-name">${file.name}</span>
+                            <span class="remove-btn" onclick="removeFileFromChat(${file.id})">
+                                <i class="fa fa-times" style="font-size:10px"></i>
+                            </span>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            window.removeFileFromChat = function(fileId) {
+                uploadedFiles = uploadedFiles.filter(f => f.id !== fileId);
+                updateFileList();
+                updateChatFilePreview();
+            };
             
             async function handleFileUpload(files) {
                 console.log('========== 文件上传开始 ==========');
@@ -742,9 +1553,12 @@
                     }
                     
                     if (isImageFile(file)) {
-                        console.warn('文件为图片类型，跳过处理');
-                        addMessage('ai', `抱歉，暂不支持上传图片文件 "${file.name}"。目前仅支持文档类文件（如 .txt, .pdf, .doc, .docx 等）。`);
-                        continue;
+                        if (isGLM) {
+                            console.warn('GLM 模式暂不支持上传图片类型，跳过处理');
+                            addMessage('ai', `抱歉，GLM 模型暂不支持直接上传图片文件 "${file.name}"。请切换到 Dify 模型进行图片分析。`);
+                            continue;
+                        }
+                        console.log('检测到图片文件，Dify 模式允许上传');
                     }
                     
                     try {
@@ -768,9 +1582,7 @@
                             uploadedFiles.push(fileObj);
                             updateFileList();
                             showUploadSuccess(file.name);
-                            console.log('>>> 步骤2: 调用 analyzeFileWithGLM 分析文件...');
-                            await analyzeFileWithGLM(fileObj, selectedModelObj);
-                            console.log('>>> 文件分析完成');
+                            console.log('>>> 文件已解析并添加到列表');
                         } else {
                             console.log('>>> 步骤1: 调用 uploadFileToDify 上传文件...');
                             showUploadProgress(file.name, 'uploading');
@@ -788,9 +1600,7 @@
                             uploadedFiles.push(fileObj);
                             updateFileList();
                             showUploadSuccess(file.name);
-                            console.log('>>> 步骤2: 调用 analyzeFileWithDify 分析文件...');
-                            await analyzeFileWithDify(fileObj);
-                            console.log('>>> 文件分析完成');
+                            console.log('>>> 文件已上传并添加到列表');
                         }
                     } catch (error) {
                         console.error('========== 文件处理失败 ==========');
@@ -799,6 +1609,7 @@
                         console.error('错误消息:', error.message);
                         console.error('错误堆栈:', error.stack);
                         console.error('======================================');
+                        removeThinkingBubble();
                         showUploadError(file.name, error.message);
                         addMessage('ai', `文件 ${file.name} 处理失败，请稍后重试。\n\n错误详情: ${error.message}`);
                     }
@@ -898,59 +1709,156 @@
             }
             
             async function analyzeFileWithDify(fileObj) {
+                console.log('[analyzeFileWithDify] ========== 开始Dify文件分析 ==========');
+                console.log('[analyzeFileWithDify] 文件对象:', {
+                    id: fileObj.id,
+                    name: fileObj.name,
+                    size: fileObj.size,
+                    difyFileId: fileObj.difyFileId
+                });
+                
                 try {
                     const models = getModels();
                     const selectedModelObj = models.find(m => m.name === currentModel);
+                    console.log('[analyzeFileWithDify] 当前模型:', currentModel);
+                    console.log('[analyzeFileWithDify] 模型配置:', selectedModelObj);
                     
                     let apiKey;
                     if (selectedModelObj && selectedModelObj.apiKey) {
                         apiKey = selectedModelObj.apiKey;
                     } else {
-                        addMessage('ai', `模型 ${currentModel} 没有配置API密钥。请在模型列表中选择已配置的模型。`);
+                        const errorMsg = `模型 ${currentModel} 没有配置API密钥。请在模型列表中选择已配置的模型。`;
+                        console.error('[analyzeFileWithDify] 错误:', errorMsg);
+                        addMessage('ai', errorMsg);
                         return;
                     }
                     
-                    const savedConfig = localStorage.getItem('modelConfig');
-                    const config = savedConfig ? JSON.parse(savedConfig) : {
-                        apiBaseUrl: 'http://localhost:8004/api',
-                        apiKey: apiKey
-                    };
+                    let apiBaseUrl = selectedModelObj.apiBaseUrl || 'https://api.dify.ai/v1';
+                    if (!apiBaseUrl.endsWith('/v1') && !apiBaseUrl.includes('/v1/')) {
+                        apiBaseUrl = apiBaseUrl.replace(/\/$/, '') + '/v1';
+                    }
+                    console.log('[analyzeFileWithDify] API基础URL:', apiBaseUrl);
+                    
+                    const conversationId = AppState.getConversationId();
+                    console.log('[analyzeFileWithDify] 会话ID:', conversationId || '(新会话)');
                     
                     const requestData = {
                         inputs: {},
                         query: `请分析并总结文件 ${fileObj.name} 的内容`,
                         response_mode: 'blocking',
-                        conversation_id: localStorage.getItem('conversationId') || '',
-                        user: 'user-' + Date.now(),
+                        user: AppState.getUserId(),
                         files: [{
-                            type: 'document',
+                            type: isImageFile(fileObj.file) ? 'image' : 'document',
                             transfer_method: 'local_file',
                             upload_file_id: fileObj.difyFileId
                         }]
                     };
                     
-                    const response = await fetch(`${config.apiBaseUrl}/chat-messages`, {
+                    if (conversationId) {
+                        requestData.conversation_id = conversationId;
+                    }
+                    
+                    console.log('[analyzeFileWithDify] 请求数据:', requestData);
+                    
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => {
+                        controller.abort();
+                        console.error('[analyzeFileWithDify] 请求超时 (300秒)');
+                    }, 300000);
+                    
+                    const apiUrl = `${apiBaseUrl}/chat-messages`;
+                    console.log('[analyzeFileWithDify] 完整API URL:', apiUrl);
+                    
+                    const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${apiKey}`
                         },
-                        body: JSON.stringify(requestData)
+                        body: JSON.stringify(requestData),
+                        signal: controller.signal
                     });
+                    
+                    clearTimeout(timeoutId);
+                    console.log('[analyzeFileWithDify] 响应状态:', response.status, response.statusText);
                     
                     if (response.ok) {
                         const data = await response.json();
+                        console.log('[analyzeFileWithDify] 响应数据:', data);
+                        
                         if (data.conversation_id) {
-                            localStorage.setItem('conversationId', data.conversation_id);
+                            AppState.updateConversationId(data.conversation_id);
+                            console.log('[analyzeFileWithDify] 保存会话ID:', data.conversation_id);
+                        } else {
+                            AppState.refreshTimestamp();
                         }
-                        addMessage('ai', data.answer);
+                        
+                        removeThinkingBubble();
+                        const answer = data.answer || '抱歉，文件分析未能获取有效结果。';
+                        addMessage('ai', `📄 文件 ${fileObj.name} 已上传。\n\n${answer}`);
+                        console.log('[analyzeFileWithDify] ========== 文件分析完成 ==========');
                     } else {
-                        const errorData = await response.json().catch(() => ({}));
-                        throw new Error(`文件分析失败: ${errorData.error || response.statusText}`);
+                        const errorText = await response.text().catch(() => '');
+                        let errorMsg = `文件分析失败: HTTP ${response.status}`;
+                        
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorMsg = errorJson.message || errorJson.error?.message || errorMsg;
+                        } catch (e) {
+                            if (errorText) errorMsg += ` - ${errorText}`;
+                        }
+                        
+                        if (errorMsg.includes('Conversation Not Exists') || errorMsg.includes('conversation_id')) {
+                            console.log('[analyzeFileWithDify] 会话不存在，清除旧会话ID并重试...');
+                            AppState.resetConversation();
+                            const retryRequestData = {
+                                inputs: {},
+                                query: `请分析并总结文件 ${fileObj.name} 的内容`,
+                                response_mode: 'blocking',
+                                user: AppState.getUserId(),
+                                files: [{
+                                    type: isImageFile(fileObj.file) ? 'image' : 'document',
+                                    transfer_method: 'local_file',
+                                    upload_file_id: fileObj.difyFileId
+                                }]
+                            };
+                            
+                            const retryResponse = await fetch(apiUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${apiKey}`
+                                },
+                                body: JSON.stringify(retryRequestData),
+                                signal: controller.signal
+                            });
+                            
+                            if (retryResponse.ok) {
+                                const data = await retryResponse.json();
+                                console.log('[analyzeFileWithDify] 重试成功');
+                                
+                                if (data.conversation_id) {
+                                    AppState.updateConversationId(data.conversation_id);
+                                }
+                                
+                                const answer = data.answer || '抱歉，文件分析未能获取有效结果。';
+                                addMessage('ai', `📄 文件 ${fileObj.name} 已上传。\n\n${answer}`);
+                                console.log('[analyzeFileWithDify] ========== 文件分析完成 ==========');
+                                return;
+                            }
+                        }
+                        
+                        console.error('[analyzeFileWithDify] 请求失败:', errorMsg);
+                        throw new Error(errorMsg);
                     }
                 } catch (error) {
-                    console.error('文件分析失败:', error);
-                    addMessage('ai', `文件 ${fileObj.name} 分析失败，请稍后重试。`);
+                    console.error('[analyzeFileWithDify] ========== 文件分析失败 ==========');
+                    console.error('[analyzeFileWithDify] 错误类型:', error.name);
+                    console.error('[analyzeFileWithDify] 错误消息:', error.message);
+                    
+                    removeThinkingBubble();
+                    const userMessage = getFriendlyErrorMessage(error.message);
+                    addMessage('ai', `文件 ${fileObj.name} 分析失败：\n${userMessage}`);
                 }
             }
             
@@ -965,11 +1873,13 @@
                     uploadedFilesContainer.innerHTML = '';
                     
                     uploadedFiles.forEach(file => {
+                        const isImg = isImageFile(file.file);
+                        const iconClass = isImg ? 'fa-file-image-o' : 'fa-file-text-o';
                         const fileItem = document.createElement('div');
                         fileItem.className = 'flex flex-col bg-white rounded-md border border-gray-200 p-2 text-xs group hover:border-primary/50 hover:shadow-sm transition-all';
                         fileItem.innerHTML = `
                             <div class="flex items-center mb-1">
-                                <i class="fa fa-file-text-o text-primary mr-2 flex-shrink-0"></i>
+                                <i class="fa ${iconClass} text-primary mr-2 flex-shrink-0"></i>
                                 <span class="text-gray-700 truncate flex-1 font-medium" title="${file.name}">${file.name}</span>
                             </div>
                             <div class="flex items-center justify-between text-gray-500">
@@ -1038,30 +1948,7 @@
                         }, 500);
                     }
                 }, 3000);
-                
-                showUploadSuccessInChat(fileName);
-            }
-            
-            function showUploadSuccessInChat(fileName) {
-                const now = new Date();
-                const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-                
-                const timeDiv = document.createElement('div');
-                timeDiv.className = 'flex justify-center my-2';
-                timeDiv.innerHTML = `<span class="text-xs text-gray-500 px-2 py-1 rounded-full bg-gray-200">${time}</span>`;
-                chatMessages.appendChild(timeDiv);
-                lastMessageTime = time;
-                
-                const successDiv = document.createElement('div');
-                successDiv.className = 'flex justify-center my-2';
-                successDiv.innerHTML = `
-                    <span class="text-sm text-green-600 px-3 py-2 rounded-full bg-green-100 flex items-center gap-2">
-                        <i class="fa fa-check-circle"></i>
-                        <span>📄 ${fileName} 上传成功</span>
-                    </span>
-                `;
-                chatMessages.appendChild(successDiv);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+                updateChatFilePreview();
             }
             
             function showUploadError(fileName, errorMessage) {
@@ -1092,12 +1979,14 @@
                 }
                 
                 addMessage('user', `我想了解文件 ${file.name} 的内容`);
+                showThinkingBubble();
                 
                 try {
                     const models = getModels();
                     const selectedModelObj = models.find(m => m.name === currentModel);
                     
                     if (!selectedModelObj || !selectedModelObj.apiKey) {
+                        removeThinkingBubble();
                         addMessage('ai', `模型 ${currentModel} 没有配置API密钥。请在模型列表中选择已配置的模型。`);
                         return;
                     }
@@ -1112,6 +2001,7 @@
                     }
                 } catch (error) {
                     console.error('文件对话失败:', error);
+                    removeThinkingBubble();
                     addMessage('ai', `文件 ${file.name} 对话失败: ${error.message}`);
                 }
             };
@@ -1127,7 +2017,7 @@
                     const modelName = modelMap[modelConfig.bigmodel] || 'glm-5';
                     const apiUrl = 'https://open.bigmodel.cn/api/coding/paas/v4/chat/completions';
                     
-                    const conversationHistory = JSON.parse(localStorage.getItem('bigmodel_conversation_history') || '[]');
+                    const conversationHistory = AppState.getBigModelHistory();
                     
                     let fileContent = file.content || '';
                     const maxContentLength = 8000;
@@ -1147,15 +2037,25 @@
                         messages: conversationHistory
                     };
                     
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => {
+                        controller.abort();
+                        console.error('[chatWithFileViaBigModel] 请求超时 (300秒)');
+                    }, 300000);
+                    
                     const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${apiKey}`
                         },
-                        body: JSON.stringify(requestData)
+                        body: JSON.stringify(requestData),
+                        signal: controller.signal
                     });
                     
+                    clearTimeout(timeoutId);
+                    
+                    removeThinkingBubble();
                     if (response.ok) {
                         const data = await response.json();
                         const assistantMessage = data.choices && data.choices[0] && data.choices[0].message 
@@ -1170,7 +2070,7 @@
                         if (conversationHistory.length > 20) {
                             conversationHistory.splice(0, conversationHistory.length - 20);
                         }
-                        localStorage.setItem('bigmodel_conversation_history', JSON.stringify(conversationHistory));
+                        AppState.saveBigModelHistory(conversationHistory);
                         
                         addMessage('ai', assistantMessage);
                     } else {
@@ -1182,53 +2082,141 @@
                     }
                 } catch (error) {
                     console.error('BigModel文件对话失败:', error);
-                    throw error;
+                    removeThinkingBubble();
+                    throw new Error(getFriendlyErrorMessage(error.message));
                 }
             }
             
             async function chatWithFileViaDify(file, modelConfig, apiKey) {
+                console.log('[chatWithFileViaDify] ========== 开始Dify文件对话 ==========');
+                console.log('[chatWithFileViaDify] 文件:', file.name);
+                console.log('[chatWithFileViaDify] 模型配置:', modelConfig);
+                
                 try {
-                    const savedConfig = localStorage.getItem('modelConfig');
-                    const config = savedConfig ? JSON.parse(savedConfig) : {
-                        apiBaseUrl: 'http://localhost:8004/api',
-                        apiKey: apiKey
-                    };
+                    let apiBaseUrl = modelConfig.apiBaseUrl || 'https://api.dify.ai/v1';
+                    if (!apiBaseUrl.endsWith('/v1') && !apiBaseUrl.includes('/v1/')) {
+                        apiBaseUrl = apiBaseUrl.replace(/\/$/, '') + '/v1';
+                    }
+                    console.log('[chatWithFileViaDify] API基础URL:', apiBaseUrl);
+                    
+                    const conversationId = AppState.getConversationId();
                     
                     const requestData = {
                         inputs: {},
                         query: `请分析并详细解释文件 ${file.name} 的内容`,
                         response_mode: 'blocking',
-                        conversation_id: localStorage.getItem('conversationId') || '',
-                        user: 'user-' + Date.now(),
+                        user: AppState.getUserId(),
                         files: [{
-                            type: 'document',
+                            type: isImageFile(file.file) ? 'image' : 'document',
                             transfer_method: 'local_file',
                             upload_file_id: file.difyFileId
                         }]
                     };
                     
-                    const response = await fetch(`${config.apiBaseUrl}/chat-messages`, {
+                    if (conversationId) {
+                        requestData.conversation_id = conversationId;
+                    }
+                    
+                    console.log('[chatWithFileViaDify] 请求数据:', requestData);
+                    
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => {
+                        controller.abort();
+                        console.error('[chatWithFileViaDify] 请求超时 (300秒)');
+                    }, 300000);
+                    
+                    const apiUrl = `${apiBaseUrl}/chat-messages`;
+                    console.log('[chatWithFileViaDify] 完整API URL:', apiUrl);
+                    
+                    const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${apiKey}`
                         },
-                        body: JSON.stringify(requestData)
+                        body: JSON.stringify(requestData),
+                        signal: controller.signal
                     });
                     
+                    clearTimeout(timeoutId);
+                    console.log('[chatWithFileViaDify] 响应状态:', response.status, response.statusText);
+                    
+                    removeThinkingBubble();
                     if (response.ok) {
                         const data = await response.json();
+                        console.log('[chatWithFileViaDify] 响应数据:', data);
+                        
                         if (data.conversation_id) {
-                            localStorage.setItem('conversationId', data.conversation_id);
+                            AppState.updateConversationId(data.conversation_id);
+                            console.log('[chatWithFileViaDify] 保存会话ID:', data.conversation_id);
+                        } else {
+                            AppState.refreshTimestamp();
                         }
-                        addMessage('ai', data.answer);
+                        
+                        const answer = data.answer || '抱歉，未能获取有效回复。';
+                        addMessage('ai', answer);
+                        console.log('[chatWithFileViaDify] ========== 文件对话完成 ==========');
                     } else {
-                        const errorData = await response.json().catch(() => ({}));
-                        throw new Error(`Dify API请求失败: ${errorData.error || response.statusText}`);
+                        const errorText = await response.text().catch(() => '');
+                        let errorMsg = `Dify API请求失败: HTTP ${response.status}`;
+                        
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorMsg = errorJson.message || errorJson.error?.message || errorMsg;
+                        } catch (e) {
+                            if (errorText) errorMsg += ` - ${errorText}`;
+                        }
+                        
+                        if (errorMsg.includes('Conversation Not Exists') || errorMsg.includes('conversation_id')) {
+                            console.log('[chatWithFileViaDify] 会话不存在，清除旧会话ID并重试...');
+                            AppState.resetConversation();
+                            const retryRequestData = {
+                                inputs: {},
+                                query: requestData.query,
+                                response_mode: 'blocking',
+                                user: AppState.getUserId(),
+                                files: [{
+                                    type: isImageFile(file.file) ? 'image' : 'document',
+                                    transfer_method: 'local_file',
+                                    upload_file_id: file.difyFileId
+                                }]
+                            };
+                            
+                            const retryResponse = await fetch(apiUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${apiKey}`
+                                },
+                                body: JSON.stringify(retryRequestData),
+                                signal: controller.signal
+                            });
+                            
+                            if (retryResponse.ok) {
+                                const data = await retryResponse.json();
+                                console.log('[chatWithFileViaDify] 重试成功');
+                                
+                                if (data.conversation_id) {
+                                    AppState.updateConversationId(data.conversation_id);
+                                }
+                                
+                                const answer = data.answer || '抱歉，未能获取有效回复。';
+                                addMessage('ai', answer);
+                                console.log('[chatWithFileViaDify] ========== 文件对话完成 ==========');
+                                return;
+                            }
+                        }
+                        
+                        console.error('[chatWithFileViaDify] 请求失败:', errorMsg);
+                        throw new Error(errorMsg);
                     }
                 } catch (error) {
-                    console.error('Dify文件对话失败:', error);
-                    throw error;
+                    console.error('[chatWithFileViaDify] ========== 文件对话失败 ==========');
+                    console.error('[chatWithFileViaDify] 错误类型:', error.name);
+                    console.error('[chatWithFileViaDify] 错误消息:', error.message);
+                    
+                    removeThinkingBubble();
+                    throw new Error(getFriendlyErrorMessage(error.message));
                 }
             }
             
@@ -1241,8 +2229,76 @@
             // 全局变量
             let lastMessageTime = '';
             
-            // 聊天功能
-            function addMessage(type, content) {
+            let messageHistory = [];
+            
+            function saveMessageToHistory(type, content, files = []) {
+                const messageRecord = {
+                    id: Date.now(),
+                    type: type,
+                    content: content,
+                    files: files.map(f => ({
+                        id: f.id || f.difyFileId,
+                        name: f.name,
+                        type: f.file ? f.file.type : (f.type || 'application/octet-stream'),
+                        size: f.size
+                    })),
+                    timestamp: new Date().toISOString()
+                };
+                messageHistory.push(messageRecord);
+                try {
+                    sessionStorage.setItem('messageHistory', JSON.stringify(messageHistory));
+                } catch (e) {
+                    console.warn('无法保存消息历史到sessionStorage:', e);
+                }
+                return messageRecord;
+            }
+            
+            function loadMessageHistory() {
+                try {
+                    const saved = sessionStorage.getItem('messageHistory');
+                    if (saved) {
+                        messageHistory = JSON.parse(saved);
+                    }
+                } catch (e) {
+                    console.warn('无法加载消息历史:', e);
+                    messageHistory = [];
+                }
+            }
+            
+            loadMessageHistory();
+            
+            function renderMessageFiles(files) {
+                if (!files || files.length === 0) return '';
+                const filesHtml = files.map(f => {
+                    const icon = getFileIcon(f.name);
+                    return `<div class="message-file-item" onclick="downloadFile('${f.id}', '${escapeHtml(f.name)}')" title="点击下载">
+                        <span class="file-icon"><i class="fa ${icon}"></i></span>
+                        <span>${escapeHtml(f.name)}</span>
+                    </div>`;
+                }).join('');
+                return `<div class="message-files">
+                    <div class="message-files-title"><i class="fa fa-paperclip"></i> 附件 (${files.length})</div>
+                    ${filesHtml}
+                </div>`;
+            }
+            
+            window.downloadFile = function(fileId, fileName) {
+                const file = uploadedFiles.find(f => f.id == fileId || f.difyFileId == fileId);
+                if (file && file.file) {
+                    const url = URL.createObjectURL(file.file);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } else {
+                    alert('文件已被清理，请重新上传');
+                }
+            };
+            
+            function addMessage(type, content, files = []) {
                 const now = new Date();
                 const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
                 
@@ -1258,23 +2314,62 @@
                 messageDiv.className = type === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai';
                 
                 if (type === 'user') {
-                    messageDiv.innerHTML = `<p>${escapeHtml(content)}</p>`;
+                    let html = `<p>${escapeHtml(content)}</p>`;
+                    if (files && files.length > 0) {
+                        html += renderMessageFiles(files);
+                    }
+                    messageDiv.innerHTML = html;
+                    saveMessageToHistory(type, content, files);
                 } else {
                     const renderedContent = renderMarkdown(content);
-                    messageDiv.innerHTML = `
+                    let html = `
                         <div class="flex items-center mb-2">
                             <i class="fa fa-robot text-primary mr-2"></i>
                             <span class="text-xs font-medium">vastbase 智能助手 - 量仔</span>
                         </div>
                         <div class="markdown-content">${renderedContent}</div>
                     `;
+                    messageDiv.innerHTML = html;
                     messageDiv.querySelectorAll('pre code').forEach((block) => {
-                        hljs.highlightElement(block);
+                        if (typeof hljs !== 'undefined') {
+                            hljs.highlightElement(block);
+                        }
                     });
+                    saveMessageToHistory(type, content, files || []);
                 }
                 
                 chatMessages.appendChild(messageDiv);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // 显示思考中状态
+            function showThinkingBubble() {
+                // 如果已经有思考中状态，不再重复添加
+                if (document.getElementById('thinking-bubble')) return;
+                
+                const thinkingDiv = document.createElement('div');
+                thinkingDiv.id = 'thinking-bubble';
+                thinkingDiv.className = 'chat-bubble-ai';
+                thinkingDiv.innerHTML = `
+                    <div class="flex items-center mb-2">
+                        <i class="fa fa-robot text-primary mr-2"></i>
+                        <span class="text-xs font-medium">vastbase 智能助手 - 量仔</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-500 italic text-sm">
+                        <i class="fa fa-spinner fa-spin text-primary"></i>
+                        <span>量仔正在思考中...</span>
+                    </div>
+                `;
+                chatMessages.appendChild(thinkingDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // 移除思考中状态
+            function removeThinkingBubble() {
+                const thinkingDiv = document.getElementById('thinking-bubble');
+                if (thinkingDiv) {
+                    thinkingDiv.remove();
+                }
             }
             
             function escapeHtml(text) {
@@ -1299,72 +2394,243 @@
             // 发送消息
             function sendMessage() {
                 const message = chatInput.value.trim();
-                if (message) {
-                    addMessage('user', message);
+                if (message || uploadedFiles.length > 0) {
+                    const currentFiles = [...uploadedFiles];
+                    const displayMessage = message || (currentFiles.length > 0 ? `[发送了 ${currentFiles.length} 个文件]` : '');
+                    addMessage('user', displayMessage, currentFiles);
                     chatInput.value = '';
                     
-                    callDifyAPI(message, currentModel);
+                    const queryMessage = message || '请分析我上传的文件';
+                    callDifyAPI(queryMessage, currentModel, currentFiles).then(() => {
+                        // 逻辑已在 callDifyAPI 中处理或在此处处理
+                    });
                 }
             }
             
-            async function callDifyAPI(message, selectedModel = 'GLM-5') {
+            async function callDifyAPI(message, selectedModel = 'GLM-5', filesToSend = null) {
+                console.log('[callDifyAPI] ========== 开始调用Dify API ==========');
+                console.log('[callDifyAPI] 选中的模型:', selectedModel);
+                
+                const currentFiles = filesToSend || [...uploadedFiles];
+                
+                showThinkingBubble();
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+
                 try {
                     const models = getModels();
                     const selectedModelObj = models.find(m => m.name === selectedModel);
+                    console.log('[callDifyAPI] 模型配置:', selectedModelObj);
                     
                     let apiKey;
                     if (selectedModelObj && selectedModelObj.apiKey) {
                         apiKey = selectedModelObj.apiKey;
                     } else {
-                        addMessage('ai', `模型 ${selectedModel} 没有配置API密钥。请在模型列表中选择已配置的模型。`);
+                        const errorMsg = `模型 ${selectedModel} 没有配置API密钥。请在模型列表中选择已配置的模型。`;
+                        console.error('[callDifyAPI] 错误:', errorMsg);
+                        removeThinkingBubble();
+                        addMessage('ai', errorMsg);
                         return;
                     }
                     
                     if (selectedModelObj && selectedModelObj.type === 'bigmodel') {
+                        console.log('[callDifyAPI] 使用BigModel API');
                         await callBigModelAPI(message, selectedModelObj, apiKey);
                         return;
                     }
                     
-                    const savedConfig = localStorage.getItem('modelConfig');
-                    const config = savedConfig ? JSON.parse(savedConfig) : {
-                        apiBaseUrl: 'http://localhost:8004/api',
-                        apiKey: apiKey
-                    };
+                    let apiBaseUrl = selectedModelObj.apiBaseUrl || 'https://api.dify.ai/v1';
+                    if (!apiBaseUrl.endsWith('/v1') && !apiBaseUrl.includes('/v1/')) {
+                        apiBaseUrl = apiBaseUrl.replace(/\/$/, '') + '/v1';
+                    }
+                    console.log('[callDifyAPI] API基础URL:', apiBaseUrl);
+                    
+                    const conversationId = AppState.getConversationId();
+                    console.log('[callDifyAPI] 会话ID:', conversationId || '(新会话)');
                     
                     const requestData = {
                         inputs: {},
                         query: message,
                         response_mode: 'blocking',
-                        conversation_id: localStorage.getItem('conversationId') || '',
-                        user: 'user-' + Date.now()
+                        user: AppState.getUserId(),
+                        files: currentFiles.filter(f => f.difyFileId).map(f => ({
+                            type: isImageFile(f.file) ? 'image' : 'document',
+                            transfer_method: 'local_file',
+                            upload_file_id: f.difyFileId
+                        }))
                     };
                     
-                    const response = await fetch(`${config.apiBaseUrl}/chat-messages`, {
+                    if (conversationId) {
+                        requestData.conversation_id = conversationId;
+                    }
+                    
+                    console.log('[callDifyAPI] 请求数据:', requestData);
+                    
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => {
+                        controller.abort();
+                        console.error('[callDifyAPI] 请求超时 (300秒)');
+                    }, 300000);
+                    
+                    const apiUrl = `${apiBaseUrl}/chat-messages`;
+                    console.log('[callDifyAPI] 完整API URL:', apiUrl);
+                    
+                    const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${apiKey}`
                         },
-                        body: JSON.stringify(requestData)
+                        body: JSON.stringify(requestData),
+                        signal: controller.signal
                     });
                     
+                    clearTimeout(timeoutId);
+                    console.log('[callDifyAPI] 响应状态:', response.status, response.statusText);
+                    
+                    removeThinkingBubble();
+
                     if (response.ok) {
                         const data = await response.json();
+                        console.log('[callDifyAPI] 响应数据:', data);
+                        console.log('[callDifyAPI] data.answer 值:', data.answer, '类型:', typeof data.answer);
+                        console.log('[callDifyAPI] 完整响应键:', Object.keys(data));
+                        
                         if (data.conversation_id) {
-                            localStorage.setItem('conversationId', data.conversation_id);
+                            AppState.updateConversationId(data.conversation_id);
+                            console.log('[callDifyAPI] 保存会话ID:', data.conversation_id);
+                        } else {
+                            AppState.refreshTimestamp();
                         }
-                        addMessage('ai', data.answer);
+                        
+                        let answer = data.answer;
+                        if (!answer || (typeof answer === 'string' && answer.trim() === '')) {
+                            console.warn('[callDifyAPI] answer 为空，尝试其他字段...');
+                            answer = data.response || data.message || data.content || data.text;
+                        }
+                        
+                        const finalAnswer = answer || '抱歉，未获取到有效回复。';
+                        addMessage('ai', finalAnswer);
+                        
+                        let savedHistory = AppState.getBigModelHistory();
+                        savedHistory.push({
+                            role: 'user',
+                            content: message
+                        });
+                        savedHistory.push({
+                            role: 'assistant',
+                            content: finalAnswer
+                        });
+                        if (savedHistory.length > 20) {
+                            savedHistory.splice(0, savedHistory.length - 20);
+                        }
+                        AppState.saveBigModelHistory(savedHistory);
+                        
+                        console.log('[callDifyAPI] 最终答案:', finalAnswer.substring(0, 100) + '...');
+                        console.log('[callDifyAPI] ========== 调用成功 ==========');
+                        
+                        // 发送成功后清空已发送的文件
+                        if (currentFiles.length > 0) {
+                            uploadedFiles = uploadedFiles.filter(f => !currentFiles.find(cf => cf.id === f.id));
+                            updateFileList();
+                            updateChatFilePreview();
+                        }
                     } else {
-                        const errorData = await response.json().catch(() => ({}));
-                        throw new Error(`API请求失败: ${errorData.error || response.statusText}`);
+                        const errorText = await response.text().catch(() => '');
+                        let errorMsg = `API请求失败: HTTP ${response.status}`;
+                        
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorMsg = errorJson.message || errorJson.error?.message || errorMsg;
+                        } catch (e) {
+                            if (errorText) errorMsg += ` - ${errorText}`;
+                        }
+                        
+                        if (errorMsg.includes('Conversation Not Exists') || errorMsg.includes('conversation_id')) {
+                            console.log('[callDifyAPI] 会话不存在，清除旧会话ID并重试...');
+                            AppState.resetConversation();
+                            const newConversationId = AppState.getConversationId();
+                            const retryRequestData = {
+                                inputs: {},
+                                query: message,
+                                response_mode: 'blocking',
+                                user: AppState.getUserId(),
+                                files: uploadedFiles.filter(f => f.difyFileId).map(f => ({
+                                    type: isImageFile(f.file) ? 'image' : 'document',
+                                    transfer_method: 'local_file',
+                                    upload_file_id: f.difyFileId
+                                }))
+                            };
+                            
+                            showThinkingBubble();
+                            const retryResponse = await fetch(apiUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${apiKey}`
+                                },
+                                body: JSON.stringify(retryRequestData),
+                                signal: controller.signal
+                            });
+                            
+                            removeThinkingBubble();
+                            if (retryResponse.ok) {
+                                const data = await retryResponse.json();
+                                console.log('[callDifyAPI] 重试成功，响应数据:', data);
+                                
+                                if (data.conversation_id) {
+                                    AppState.updateConversationId(data.conversation_id);
+                                    console.log('[callDifyAPI] 保存新会话ID:', data.conversation_id);
+                                }
+                                
+                                const answer = data.answer || '抱歉，未获取到有效回复。';
+                                addMessage('ai', answer);
+                                
+                                let savedHistory = AppState.getBigModelHistory();
+                                savedHistory.push({
+                                    role: 'user',
+                                    content: message
+                                });
+                                savedHistory.push({
+                                    role: 'assistant',
+                                    content: answer
+                                });
+                                if (savedHistory.length > 20) {
+                                    savedHistory.splice(0, savedHistory.length - 20);
+                                }
+                                AppState.saveBigModelHistory(savedHistory);
+                                
+                                console.log('[callDifyAPI] ========== 调用成功 ==========');
+                                
+                                // 发送成功后清空已发送的文件
+                                if (currentFiles.length > 0) {
+                                    uploadedFiles = uploadedFiles.filter(f => !currentFiles.find(cf => cf.id === f.id));
+                                    updateFileList();
+                                    updateChatFilePreview();
+                                }
+                                return;
+                            }
+                        }
+                        
+                        console.error('[callDifyAPI] 请求失败:', errorMsg);
+                        throw new Error(errorMsg);
                     }
                 } catch (error) {
-                    console.error('调用Dify API失败:', error);
-                    addMessage('ai', '抱歉，调用服务时出现错误，请稍后重试。');
+                    console.error('[callDifyAPI] ========== 调用失败 ==========');
+                    console.error('[callDifyAPI] 错误类型:', error.name);
+                    console.error('[callDifyAPI] 错误消息:', error.message);
+                    
+                    removeThinkingBubble();
+                    const userMessage = getFriendlyErrorMessage(error.message);
+                    addMessage('ai', userMessage);
+                } finally {
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = '<i class="fa fa-paper-plane"></i>';
                 }
             }
             
             async function callBigModelAPI(message, modelConfig, apiKey) {
+                showThinkingBubble();
                 try {
                     const modelMap = {
                         'glm-5': 'glm-5',
@@ -1375,18 +2641,7 @@
                     const modelName = modelMap[modelConfig.bigmodel] || 'glm-5';
                     const apiUrl = 'https://open.bigmodel.cn/api/coding/paas/v4/chat/completions';
                     
-                    let conversationHistory = JSON.parse(localStorage.getItem('bigmodel_conversation_history') || '[]');
-                    
-                    const trimmedHistory = [];
-                    let totalLength = 0;
-                    const maxHistoryLength = 6000;
-                    for (let i = conversationHistory.length - 1; i >= 0; i--) {
-                        const msg = conversationHistory[i];
-                        if (totalLength + msg.content.length > maxHistoryLength) break;
-                        trimmedHistory.unshift(msg);
-                        totalLength += msg.content.length;
-                    }
-                    conversationHistory = trimmedHistory;
+                    let conversationHistory = AppState.getBigModelHistory();
                     
                     let enhancedMessage = message;
                     const filesWithContext = uploadedFiles.filter(f => f.content);
@@ -1420,8 +2675,22 @@
                         messages: messagesForRequest
                     };
                     
+                    // 补充：将当前未处理的本地文件内容加入上下文
+                    const currentFiles = [...uploadedFiles];
+                    const localFilesWithContent = currentFiles.filter(f => f.content && !f.difyFileId);
+                    if (localFilesWithContent.length > 0) {
+                        let localContext = '\n\n【本次待发送的文件内容】\n';
+                        localFilesWithContent.forEach(f => {
+                            localContext += `文件名: ${f.name}\n内容:\n${f.content.substring(0, 2000)}${f.content.length > 2000 ? '...' : ''}\n---\n`;
+                        });
+                        requestData.messages[requestData.messages.length - 1].content += localContext;
+                    }
+                    
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 60000);
+                    const timeoutId = setTimeout(() => {
+                        controller.abort();
+                        console.error('[callBigModelAPI] 请求超时 (300秒)');
+                    }, 300000);
                     
                     const response = await fetch(apiUrl, {
                         method: 'POST',
@@ -1435,13 +2704,14 @@
                     
                     clearTimeout(timeoutId);
                     
+                    removeThinkingBubble();
                     if (response.ok) {
                         const data = await response.json();
                         const assistantMessage = data.choices && data.choices[0] && data.choices[0].message 
                             ? data.choices[0].message.content 
                             : '抱歉，未获取到有效回复。';
                         
-                        let savedHistory = JSON.parse(localStorage.getItem('bigmodel_conversation_history') || '[]');
+                        let savedHistory = AppState.getBigModelHistory();
                         savedHistory.push({
                             role: 'user',
                             content: message
@@ -1454,7 +2724,14 @@
                         if (savedHistory.length > 20) {
                             savedHistory.splice(0, savedHistory.length - 20);
                         }
-                        localStorage.setItem('bigmodel_conversation_history', JSON.stringify(savedHistory));
+                        AppState.saveBigModelHistory(savedHistory);
+                        
+                        // 发送成功后清空已发送的文件
+                        if (currentFiles.length > 0) {
+                            uploadedFiles = uploadedFiles.filter(f => !currentFiles.find(cf => cf.id === f.id));
+                            updateFileList();
+                            updateChatFilePreview();
+                        }
                         
                         addMessage('ai', assistantMessage);
                     } else {
@@ -1466,11 +2743,9 @@
                     }
                 } catch (error) {
                     console.error('调用BigModel API失败:', error);
-                    if (error.name === 'AbortError') {
-                        addMessage('ai', '抱歉，请求超时，请稍后重试。');
-                    } else {
-                        addMessage('ai', `抱歉，调用BigModel服务时出现错误: ${error.message}`);
-                    }
+                    removeThinkingBubble();
+                    const userMessage = getFriendlyErrorMessage(error.message);
+                    addMessage('ai', userMessage);
                 }
             }
             
@@ -1506,7 +2781,7 @@
                     console.log('[analyzeFileWithGLM] 使用的模型:', modelName);
                     console.log('[analyzeFileWithGLM] API URL:', apiUrl);
                     
-                    const conversationHistory = JSON.parse(localStorage.getItem('bigmodel_conversation_history') || '[]');
+                    const conversationHistory = AppState.getBigModelHistory();
                     console.log('[analyzeFileWithGLM] 历史对话长度:', conversationHistory.length);
                     
                     const userMessage = `请分析并总结以下文件内容（文件名: ${fileObj.name}）：\n\n---\n${fileObj.content}\n---`;
@@ -1538,6 +2813,7 @@
                     console.log('[analyzeFileWithGLM] API响应状态:', response.status, response.statusText);
                     console.log('[analyzeFileWithGLM] API响应OK:', response.ok);
                     
+                    removeThinkingBubble();
                     if (response.ok) {
                         const data = await response.json();
                         console.log('[analyzeFileWithGLM] API响应数据:', data);
@@ -1551,7 +2827,7 @@
                         const aiResponse = data.choices[0].message.content;
                         console.log('[analyzeFileWithGLM] AI响应长度:', aiResponse ? aiResponse.length : 0);
                         
-                        let savedHistory = JSON.parse(localStorage.getItem('bigmodel_conversation_history') || '[]');
+                        let savedHistory = AppState.getBigModelHistory();
                         savedHistory.push({
                             role: 'user',
                             content: `[用户上传了文件: ${fileObj.name}]`
@@ -1563,7 +2839,7 @@
                         if (savedHistory.length > 20) {
                             savedHistory.splice(0, savedHistory.length - 20);
                         }
-                        localStorage.setItem('bigmodel_conversation_history', JSON.stringify(savedHistory));
+                        AppState.saveBigModelHistory(savedHistory);
                         
                         addMessage('ai', `📄 文件 ${fileObj.name} 已上传。\n\n${aiResponse}`);
                         console.log('[analyzeFileWithGLM] ========== GLM文件分析完成 ==========');
@@ -1580,7 +2856,9 @@
                     console.error('[analyzeFileWithGLM] 错误类型:', error.name);
                     console.error('[analyzeFileWithGLM] 错误消息:', error.message);
                     console.error('[analyzeFileWithGLM] 错误堆栈:', error.stack);
-                    addMessage('ai', `📄 文件 ${fileObj.name} 已上传，但分析时出现错误: ${error.message}`);
+                    removeThinkingBubble();
+                    const userMessage = getFriendlyErrorMessage(error.message);
+                    addMessage('ai', `📄 文件 ${fileObj.name} 已上传，但分析时出现错误：\n${userMessage}`);
                 }
             }
             
@@ -1604,33 +2882,37 @@
                         throw new Error(`模型 ${currentModel} 没有配置API密钥`);
                     }
                     
-                    const savedConfig = localStorage.getItem('modelConfig');
-                    const config = savedConfig ? JSON.parse(savedConfig) : {
-                        apiBaseUrl: 'http://localhost:8004/api',
-                        apiKey: apiKey
-                    };
-                    console.log('[uploadFileToDify] API配置:', {
-                        apiBaseUrl: config.apiBaseUrl,
-                        hasApiKey: !!config.apiKey
-                    });
+                    let apiBaseUrl = selectedModelObj.apiBaseUrl || 'https://api.dify.ai/v1';
+                    if (!apiBaseUrl.endsWith('/v1') && !apiBaseUrl.includes('/v1/')) {
+                        apiBaseUrl = apiBaseUrl.replace(/\/$/, '') + '/v1';
+                    }
+                    console.log('[uploadFileToDify] API基础URL:', apiBaseUrl);
                     
                     const formData = new FormData();
                     formData.append('file', file);
-                    formData.append('user', 'user-' + Date.now());
+                    formData.append('user', AppState.getUserId());
                     console.log('[uploadFileToDify] FormData 已构建');
                     
-                    const uploadUrl = `${config.apiBaseUrl}/files/upload`;
+                    const uploadUrl = `${apiBaseUrl}/files/upload`;
                     console.log('[uploadFileToDify] 上传URL:', uploadUrl);
                     console.log('[uploadFileToDify] 发送上传请求...');
+                    
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => {
+                        controller.abort();
+                        console.error('[uploadFileToDify] 上传超时 (120秒)');
+                    }, 120000);
                     
                     const response = await fetch(uploadUrl, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${apiKey}`
                         },
-                        body: formData
+                        body: formData,
+                        signal: controller.signal
                     });
                     
+                    clearTimeout(timeoutId);
                     console.log('[uploadFileToDify] 响应状态:', response.status, response.statusText);
                     console.log('[uploadFileToDify] 响应OK:', response.ok);
                     
@@ -1642,18 +2924,37 @@
                         return data.id;
                     } else {
                         const errorText = await response.text().catch(() => '');
-                        console.error('[uploadFileToDify] 上传失败');
-                        console.error('[uploadFileToDify] HTTP状态:', response.status);
-                        console.error('[uploadFileToDify] 错误响应:', errorText);
-                        throw new Error(`文件上传失败: HTTP ${response.status} - ${errorText || response.statusText}`);
+                        let errorMsg = `文件上传失败: HTTP ${response.status}`;
+                        
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorMsg = errorJson.message || errorJson.error?.message || errorMsg;
+                        } catch (e) {
+                            if (errorText) errorMsg += ` - ${errorText}`;
+                        }
+                        
+                        console.error('[uploadFileToDify] 上传失败:', errorMsg);
+                        throw new Error(errorMsg);
                     }
                 } catch (error) {
                     console.error('[uploadFileToDify] ========== 上传异常 ==========');
                     console.error('[uploadFileToDify] 错误类型:', error.name);
                     console.error('[uploadFileToDify] 错误消息:', error.message);
                     console.error('[uploadFileToDify] 错误堆栈:', error.stack);
+                    
+                    if (error.name === 'AbortError') {
+                        throw new Error('文件上传超时，请检查网络连接或稍后重试。');
+                    } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                        throw new Error('无法连接到Dify服务，请检查API地址配置是否正确。');
+                    }
+                    
                     throw error;
                 }
+            }
+            
+            async function uploadFileToGLM(file) {
+                console.log('[uploadFileToGLM] 上传文件到GLM后端:', file.name);
+                return await uploadFileToDify(file);
             }
             
             // 聊天输入框回车发送
@@ -1670,10 +2971,11 @@
             // 清空问题表单
             clearIssueBtn.addEventListener('click', function() {
                 issueTitle.value = '';
-                issueType.value = 'installation';
+                issueType.value = 'exbase';
                 issueDescription.value = '';
                 uploadedFiles = [];
                 updateFileList();
+                updateChatFilePreview();
                 alert('表单已清空');
             });
             
@@ -1687,21 +2989,40 @@
                     return;
                 }
                 
-                addMessage('user', `问题提交：\n标题：${title}\n类型：${type === 'installation' ? '安装升级问题' : '运维问题'}\n描述：${description}\n已上传文件：${uploadedFiles.length > 0 ? uploadedFiles.map(file => file.name).join(', ') : '无'}`);
+                const typeTextMap = {
+                    'installation': '安装升级问题',
+                    'operation': '运维问题',
+                    'exbase': 'Exbase迁移问题'
+                };
+                const typeText = typeTextMap[type] || '未知类型';
+                const formattedText = `问题标题：${title}\n问题类型：${typeText}\n问题描述：${description}`;
                 
-                // 如果有上传的文件，先上传文件然后分析
-                if (uploadedFiles.length > 0) {
-                    await submitIssueWithFiles(title, type, description, uploadedFiles);
-                } else {
-                    // 没有文件，直接调用API
-                    await callDifyAPIWithModel(`请分析以下问题：\n标题：${title}\n类型：${type === 'installation' ? '安装升级问题' : '运维问题'}\n描述：${description}`, currentModel);
+                const currentFiles = [...uploadedFiles];
+                
+                const originalBtnContent = submitIssueBtn.innerHTML;
+                submitIssueBtn.disabled = true;
+                submitIssueBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 提交中...';
+                submitIssueBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                
+                addMessage('user', formattedText, currentFiles);
+                
+                try {
+                    await callDifyAPI(formattedText, currentModel, currentFiles);
+                    
+                    issueTitle.value = '';
+                    issueType.value = 'exbase';
+                    issueDescription.value = '';
+                    uploadedFiles = [];
+                    updateFileList();
+                    updateChatFilePreview();
+                } catch (error) {
+                    console.error('提交问题失败:', error);
+                    addMessage('ai', `抱歉，提交问题时出现错误：${error.message || '请稍后重试'}`);
+                } finally {
+                    submitIssueBtn.disabled = false;
+                    submitIssueBtn.innerHTML = originalBtnContent;
+                    submitIssueBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 }
-                
-                issueTitle.value = '';
-                issueType.value = 'installation';
-                issueDescription.value = '';
-                uploadedFiles = [];
-                updateFileList();
             });
             
             // 提交问题并上传文件到GLM-4.5分析
@@ -1710,10 +3031,10 @@
                     // 上传所有文件
                     const uploadedFileIds = [];
                     for (const file of files) {
-                        const fileId = await uploadFileToGLM(file.file);
+                        const fileId = await uploadFileToDify(file.file);
                         if (fileId) {
                             uploadedFileIds.push({
-                                type: 'document',
+                                type: isImageFile(file.file) ? 'image' : 'document',
                                 transfer_method: 'local_file',
                                 upload_file_id: fileId
                             });
@@ -1731,6 +3052,8 @@
             
             // 调用Dify API（带文件）
             async function callDifyAPIWithFiles(message, files, model = 'GLM-4.5') {
+                console.log('[callDifyAPIWithFiles] ========== 开始调用Dify API（带文件） ==========');
+                
                 try {
                     const models = getModels();
                     const selectedModelObj = models.find(m => m.name === model);
@@ -1743,48 +3066,75 @@
                         return;
                     }
                     
-                    const savedConfig = localStorage.getItem('modelConfig');
-                    const config = savedConfig ? JSON.parse(savedConfig) : {
-                        apiBaseUrl: 'http://localhost:8004/api',
-                        apiKey: apiKey
-                    };
+                    let apiBaseUrl = selectedModelObj.apiBaseUrl || 'https://api.dify.ai/v1';
+                    if (!apiBaseUrl.endsWith('/v1') && !apiBaseUrl.includes('/v1/')) {
+                        apiBaseUrl = apiBaseUrl.replace(/\/$/, '') + '/v1';
+                    }
+                    
+                    const conversationId = AppState.getConversationId();
                     
                     const requestData = {
                         inputs: {},
                         query: message,
                         response_mode: 'blocking',
-                        conversation_id: localStorage.getItem('conversationId') || '',
                         user: 'user-' + Date.now(),
                         files: files
                     };
                     
-                    const response = await fetch(`${config.apiBaseUrl}/chat-messages`, {
+                    if (conversationId) {
+                        requestData.conversation_id = conversationId;
+                    }
+                    
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => {
+                        controller.abort();
+                        console.error('[callDifyAPIWithFiles] 请求超时 (300秒)');
+                    }, 300000);
+                    
+                    const response = await fetch(`${apiBaseUrl}/chat-messages`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${apiKey}`
                         },
-                        body: JSON.stringify(requestData)
+                        body: JSON.stringify(requestData),
+                        signal: controller.signal
                     });
                     
+                    clearTimeout(timeoutId);
+                    
+                    removeThinkingBubble();
                     if (response.ok) {
                         const data = await response.json();
                         if (data.conversation_id) {
-                            localStorage.setItem('conversationId', data.conversation_id);
+                            AppState.updateConversationId(data.conversation_id);
+                        } else {
+                            AppState.refreshTimestamp();
                         }
-                        addMessage('ai', data.answer);
+                        addMessage('ai', data.answer || '抱歉，未获取到有效回复。');
                     } else {
-                        const errorData = await response.json().catch(() => ({}));
-                        throw new Error(`API请求失败: ${errorData.error || response.statusText}`);
+                        const errorText = await response.text().catch(() => '');
+                        let errorMsg = `API请求失败: HTTP ${response.status}`;
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorMsg = errorJson.message || errorJson.error?.message || errorMsg;
+                        } catch (e) {
+                            if (errorText) errorMsg += ` - ${errorText}`;
+                        }
+                        throw new Error(errorMsg);
                     }
                 } catch (error) {
-                    console.error('调用API失败:', error);
-                    addMessage('ai', '抱歉，调用服务时出现错误，请稍后重试。');
+                    console.error('[callDifyAPIWithFiles] 调用失败:', error);
+                    removeThinkingBubble();
+                    const userMessage = getFriendlyErrorMessage(error.message);
+                    addMessage('ai', userMessage);
                 }
             }
             
             // 调用Dify API（指定模型）
             async function callDifyAPIWithModel(message, model = 'GLM-4.5') {
+                console.log('[callDifyAPIWithModel] ========== 开始调用Dify API（指定模型） ==========');
+                
                 try {
                     const models = getModels();
                     const selectedModelObj = models.find(m => m.name === model);
@@ -1797,42 +3147,67 @@
                         return;
                     }
                     
-                    const savedConfig = localStorage.getItem('modelConfig');
-                    const config = savedConfig ? JSON.parse(savedConfig) : {
-                        apiBaseUrl: 'http://localhost:8004/api',
-                        apiKey: apiKey
-                    };
+                    let apiBaseUrl = selectedModelObj.apiBaseUrl || 'https://api.dify.ai/v1';
+                    if (!apiBaseUrl.endsWith('/v1') && !apiBaseUrl.includes('/v1/')) {
+                        apiBaseUrl = apiBaseUrl.replace(/\/$/, '') + '/v1';
+                    }
+                    
+                    const conversationId = AppState.getConversationId();
                     
                     const requestData = {
                         inputs: {},
                         query: message,
                         response_mode: 'blocking',
-                        conversation_id: localStorage.getItem('conversationId') || '',
                         user: 'user-' + Date.now()
                     };
                     
-                    const response = await fetch(`${config.apiBaseUrl}/chat-messages`, {
+                    if (conversationId) {
+                        requestData.conversation_id = conversationId;
+                    }
+                    
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => {
+                        controller.abort();
+                        console.error('[callDifyAPIWithModel] 请求超时 (300秒)');
+                    }, 300000);
+                    
+                    const response = await fetch(`${apiBaseUrl}/chat-messages`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${apiKey}`
                         },
-                        body: JSON.stringify(requestData)
+                        body: JSON.stringify(requestData),
+                        signal: controller.signal
                     });
                     
+                    clearTimeout(timeoutId);
+                    
+                    removeThinkingBubble();
                     if (response.ok) {
                         const data = await response.json();
                         if (data.conversation_id) {
-                            localStorage.setItem('conversationId', data.conversation_id);
+                            AppState.updateConversationId(data.conversation_id);
+                        } else {
+                            AppState.refreshTimestamp();
                         }
-                        addMessage('ai', data.answer);
+                        addMessage('ai', data.answer || '抱歉，未获取到有效回复。');
                     } else {
-                        const errorData = await response.json().catch(() => ({}));
-                        throw new Error(`API请求失败: ${errorData.error || response.statusText}`);
+                        const errorText = await response.text().catch(() => '');
+                        let errorMsg = `API请求失败: HTTP ${response.status}`;
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorMsg = errorJson.message || errorJson.error?.message || errorMsg;
+                        } catch (e) {
+                            if (errorText) errorMsg += ` - ${errorText}`;
+                        }
+                        throw new Error(errorMsg);
                     }
                 } catch (error) {
-                    console.error('调用API失败:', error);
-                    addMessage('ai', '抱歉，调用服务时出现错误，请稍后重试。');
+                    console.error('[callDifyAPIWithModel] 调用失败:', error);
+                    removeThinkingBubble();
+                    const userMessage = getFriendlyErrorMessage(error.message);
+                    addMessage('ai', userMessage);
                 }
             }
         });
