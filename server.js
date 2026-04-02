@@ -5,7 +5,7 @@ const path = require('path');
 const url = require('url');
 
 const PORT = 8081;
-const DIFY_API_BASE = 'https://api.dify.ai';
+const DIFY_API_BASE = 'http://101.35.56.39';
 
 const MIME_TYPES = {
     '.html': 'text/html; charset=utf-8',
@@ -40,6 +40,12 @@ function serveStaticFile(req, res, pathname) {
     let filePath = pathname;
     if (filePath === '/') {
         filePath = '/index.html';
+    }
+    
+    try {
+        filePath = decodeURIComponent(filePath);
+    } catch (e) {
+        console.error('[Static] URL decode error:', e.message);
     }
     
     filePath = path.join(__dirname, filePath);
@@ -92,15 +98,19 @@ function handleDifyProxy(req, res, pathname, parsedUrl) {
             }
         }
         
+        const targetUrl = new URL(DIFY_API_BASE);
+        const isHttps = targetUrl.protocol === 'https:';
+        const httpModule = isHttps ? https : http;
+        
         const options = {
-            hostname: 'api.dify.ai',
-            port: 443,
+            hostname: targetUrl.hostname,
+            port: targetUrl.port || (isHttps ? 443 : 80),
             path: difyPath + (parsedUrl.search || ''),
             method: req.method,
             headers: headers
         };
         
-        const proxyReq = https.request(options, (proxyRes) => {
+        const proxyReq = httpModule.request(options, (proxyRes) => {
             console.log(`[Proxy Response] Status: ${proxyRes.statusCode}`);
             res.writeHead(proxyRes.statusCode, {
                 ...proxyRes.headers,
@@ -148,8 +158,8 @@ function handleDifyProxy(req, res, pathname, parsedUrl) {
     });
 }
 
-server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}/`);
+server.listen(PORT, '127.0.0.1', () => {
+    console.log(`Server running at http://127.0.0.1:${PORT}/`);
     console.log(`Dify API Proxy: /api/dify/* -> ${DIFY_API_BASE}/*`);
 });
 
