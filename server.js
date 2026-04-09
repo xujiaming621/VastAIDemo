@@ -322,8 +322,8 @@ function handleMvsSubmit(req, res) {
     });
 }
 
-server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}/`);
+server.listen(PORT, '127.0.0.1', () => {
+    console.log(`Server running at http://127.0.0.1:${PORT}/`);
     console.log(`Dify API Proxy: /api/dify/* -> ${DIFY_API_BASE}/*`);
     console.log(`MVS Submit API: POST /api/mvs/submit`);
 });
