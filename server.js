@@ -190,7 +190,16 @@ function handleMvsSubmit(req, res) {
             }
 
             const sessionId = 'mvs-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-            const queryText = JSON.stringify(requestData, null, 2);
+            
+            // 优化JSON格式，防止Markdown解析器误解析特定格式
+            const optimizedJsonString = (jsonStr) => {
+                // 保护时间格式中的~符号，避免被解析为删除线
+                return jsonStr.replace(/~(\d{1,2}:\d{2})/g, '～$1');
+            };
+            
+            let queryText = JSON.stringify(requestData, null, 2);
+            queryText = optimizedJsonString(queryText);
+            
             const userId = 'mvs-user';
 
             const difyRequestBody = JSON.stringify({

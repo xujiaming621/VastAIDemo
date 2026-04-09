@@ -419,6 +419,9 @@
         }
 
         function parseMarkdown(text) {
+            // 恢复被优化的格式：将全角波浪号恢复为半角波浪号
+            text = text.replace(/～(\d{1,2}:\d{2})/g, '~$1');
+            
             if (typeof marked !== 'undefined') {
                 try {
                     marked.setOptions({
@@ -455,6 +458,14 @@
             html = html.replace(/\n/g, '<br>');
             
             return '<p>' + html + '</p>';
+        }
+
+        function cleanImageTags(text) {
+            // 处理图片标签：将<img>标签替换为"图片："格式的文本描述
+            // 匹配各种格式的img标签，包括自闭合标签和带结束标签的
+            return text.replace(/<img\s+[^>]*>/gi, '图片：')
+                       .replace(/<img\s+[^>]*\/>/gi, '图片：')
+                       .replace(/<img\s+[^>]*><\/img>/gi, '图片：');
         }
 
         function addMessage(role, content, files = null) {
@@ -695,6 +706,7 @@
                 let cleanAnswer = fullAnswer;
                 cleanAnswer = cleanAnswer.replace(/<think[\s\S]*?<\/think>/g, '');
                 cleanAnswer = cleanAnswer.replace(/<think&gt;[\s\S]*?<\/think&gt;/g, '');
+                cleanAnswer = cleanImageTags(cleanAnswer);
                 cleanAnswer = cleanAnswer.trim();
                 addMessage('assistant', cleanAnswer);
                 setStatus('在线', 'text-green-500');
@@ -840,6 +852,7 @@
                         let cleanAnswer = msg.answer;
                         cleanAnswer = cleanAnswer.replace(/<think[\s\S]*?<\/think>/g, '');
                         cleanAnswer = cleanAnswer.replace(/<think&gt;[\s\S]*?<\/think&gt;/g, '');
+                        cleanAnswer = cleanImageTags(cleanAnswer);
                         cleanAnswer = cleanAnswer.trim();
                         addMessage('assistant', cleanAnswer);
                     }
