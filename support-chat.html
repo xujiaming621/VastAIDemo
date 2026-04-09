@@ -329,6 +329,102 @@
         #user-input {
             padding-left: 44px;
         }
+        .mvs-ticket-form {
+            font-size: 13px;
+            line-height: 1.5;
+            max-width: 520px;
+        }
+        .mvs-ticket-form .ticket-section {
+            margin-bottom: 10px;
+            border: 1px solid #d0e3ff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .mvs-ticket-form .ticket-section:last-child {
+            margin-bottom: 0;
+        }
+        .mvs-ticket-form .ticket-section-header {
+            background: #e8f3ff;
+            padding: 6px 12px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #165DFF;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .mvs-ticket-form .ticket-section-body {
+            padding: 8px 12px;
+        }
+        .mvs-ticket-form .ticket-field {
+            display: flex;
+            padding: 4px 0;
+            border-bottom: 1px dashed #e5e7eb;
+        }
+        .mvs-ticket-form .ticket-field:last-child {
+            border-bottom: none;
+        }
+        .mvs-ticket-form .ticket-field-label {
+            color: #6b7280;
+            min-width: 80px;
+            flex-shrink: 0;
+            font-size: 12px;
+        }
+        .mvs-ticket-form .ticket-field-value {
+            color: #1f2937;
+            word-break: break-all;
+            font-size: 12px;
+        }
+        .mvs-ticket-form .ticket-record {
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            overflow: hidden;
+        }
+        .mvs-ticket-form .ticket-record:last-child {
+            margin-bottom: 0;
+        }
+        .mvs-ticket-form .ticket-record-header {
+            background: #f9fafb;
+            padding: 4px 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .mvs-ticket-form .ticket-record-type {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .mvs-ticket-form .ticket-record-type.user-type {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        .mvs-ticket-form .ticket-record-type.engineer-type {
+            background: #dcfce7;
+            color: #15803d;
+        }
+        .mvs-ticket-form .ticket-record-content {
+            padding: 6px 10px;
+            font-size: 12px;
+            color: #374151;
+            max-height: 150px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .mvs-ticket-form .ticket-record-tag {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            background: #fef3c7;
+            color: #92400e;
+        }
     </style>
 </head>
 <body>
@@ -450,6 +546,122 @@
             return div.innerHTML;
         }
 
+        function stripHtml(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || '';
+        }
+
+        function isMvsTicketJson(content) {
+            try {
+                const trimmed = content.trim();
+                if (!trimmed.startsWith('{')) return false;
+                const data = JSON.parse(trimmed);
+                return !!(data['问题信息'] || data['客户信息'] || data['产品信息'] || data['沟通记录']);
+            } catch (e) {
+                return false;
+            }
+        }
+
+        const TICKET_FIELD_LABELS = {
+            '工单编号': '工单编号',
+            '问题概要': '问题概要',
+            '问题描述': '问题描述',
+            '公司名称': '公司名称',
+            '客户级别': '客户级别',
+            '是否TOP客户': '是否TOP客户',
+            '客户经理': '客户经理',
+            '产品版本': '产品版本',
+            '模块': '模块',
+            '硬件平台': '硬件平台',
+            '操作系统': '操作系统',
+            '部署方式': '部署方式'
+        };
+
+        const SECTION_ICONS = {
+            '问题信息': 'fa-exclamation-circle',
+            '客户信息': 'fa-user',
+            '产品信息': 'fa-cube'
+        };
+
+        function renderTicketFields(obj) {
+            return Object.entries(obj).map(([key, value]) => {
+                if (typeof value === 'string') {
+                    const cleanValue = stripHtml(value).trim();
+                    return `<div class="ticket-field">
+                        <span class="ticket-field-label">${escapeHtml(TICKET_FIELD_LABELS[key] || key)}</span>
+                        <span class="ticket-field-value">${escapeHtml(cleanValue)}</span>
+                    </div>`;
+                }
+                return '';
+            }).join('');
+        }
+
+        function renderMvsTicketForm(content) {
+            try {
+                const data = JSON.parse(content.trim());
+                let html = '<div class="mvs-ticket-form">';
+
+                const sections = [
+                    { key: '问题信息', title: '问题信息' },
+                    { key: '客户信息', title: '客户信息' },
+                    { key: '产品信息', title: '产品信息' }
+                ];
+
+                sections.forEach(sec => {
+                    if (data[sec.key]) {
+                        const icon = SECTION_ICONS[sec.key] || 'fa-info-circle';
+                        html += `<div class="ticket-section">
+                            <div class="ticket-section-header">
+                                <i class="fa ${icon}"></i>
+                                ${escapeHtml(sec.title)}
+                            </div>
+                            <div class="ticket-section-body">
+                                ${renderTicketFields(data[sec.key])}
+                            </div>
+                        </div>`;
+                    }
+                });
+
+                if (data['沟通记录'] && Array.isArray(data['沟通记录']) && data['沟通记录'].length > 0) {
+                    html += `<div class="ticket-section">
+                        <div class="ticket-section-header">
+                            <i class="fa fa-comments"></i>
+                            沟通记录 (${data['沟通记录'].length}条)
+                        </div>
+                        <div class="ticket-section-body">`;
+
+                    data['沟通记录'].forEach(record => {
+                        const isUser = record['记录类型'] === '用户发送消息';
+                        const typeClass = isUser ? 'user-type' : 'engineer-type';
+                        const typeLabel = isUser ? '用户' : '工程师';
+                        let rawContent = record['内容'] || '';
+                        rawContent = rawContent.replace(/<img\s+[^>]*?src\s*=\s*["']([^"']+)["'][^>]*?\/?>/gi, '[图片: $1]');
+                        rawContent = rawContent.replace(/<img\s+[^>]*?src\s*=\s*([^\s>"']+)[^>]*?\/?>/gi, '[图片: $1]');
+                        const cleanContent = stripHtml(rawContent).trim();
+                        const tag = record['流程标识'] ? `<span class="ticket-record-tag">${escapeHtml(record['流程标识'])}</span>` : '';
+
+                        html += `<div class="ticket-record">
+                            <div class="ticket-record-header">
+                                <span class="ticket-record-type ${typeClass}">${typeLabel}</span>
+                                <span>${escapeHtml(record['时间'] || '')}</span>
+                                ${tag}
+                            </div>
+                            <div class="ticket-record-content">${parseMarkdown(cleanContent)}</div>
+                        </div>`;
+                    });
+
+                    html += '</div></div>';
+                }
+
+                html += '</div>';
+                return html;
+            } catch (e) {
+                console.error('渲染工单表单失败:', e);
+                return parseMarkdown(content);
+            }
+        }
+
         function cleanWhitespace(text) {
             // 清理多余的空白字符：连续的换行符、制表符和空格
             // 保留代码块中的格式
@@ -539,11 +751,9 @@
         }
 
         function cleanImageTags(text) {
-            // 处理图片标签：将<img>标签替换为"图片："格式的文本描述
-            // 匹配各种格式的img标签，包括自闭合标签和带结束标签的
-            return text.replace(/<img\s+[^>]*>/gi, '图片：')
-                       .replace(/<img\s+[^>]*\/>/gi, '图片：')
-                       .replace(/<img\s+[^>]*><\/img>/gi, '图片：');
+            return text.replace(/<img\s+[^>]*?src\s*=\s*(?:&quot;|["'])([^"'>]+?)(?:&quot;|["'])[^>]*?\/?>/gi, '[图片链接]($1)')
+                       .replace(/<img\s+[^>]*?src\s*=\s*([^\s>"']+)[^>]*?\/?>/gi, '[图片链接]($1)')
+                       .replace(/<img\s+[^>]*><\/img>/gi, '');
         }
 
         function addMessage(role, content, files = null) {
@@ -561,10 +771,12 @@
                     `).join('');
                 }
                 
+                const renderedContent = isMvsTicketJson(content) ? renderMvsTicketForm(content) : parseMarkdown(content);
+
                 messageDiv.innerHTML = `
                     <div class="flex items-end gap-2 max-w-[80%]">
                         <div class="bg-[#E8F3FF] text-gray-800 px-3 py-2 rounded-2xl rounded-br-md">
-                            <div class="markdown-content user-message-text">${parseMarkdown(content)}</div>
+                            <div class="markdown-content user-message-text">${renderedContent}</div>
                             ${filesHtml}
                         </div>
                         <div class="w-8 h-8 bg-[#E8F3FF] rounded-full flex items-center justify-center flex-shrink-0">
