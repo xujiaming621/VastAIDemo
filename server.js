@@ -187,6 +187,43 @@ function handleDifyProxy(req, res, pathname, parsedUrl) {
 }
 
 
+function sanitizeJsonString(str) {
+    const escapeMap = { '\n': '\\n', '\r': '\\r', '\t': '\\t', '\b': '\\b', '\f': '\\f' };
+    let result = '';
+    let inString = false;
+    let i = 0;
+    while (i < str.length) {
+        const ch = str[i];
+        if (inString) {
+            if (ch === '\\') {
+                result += ch + str[i + 1];
+                i += 2;
+                continue;
+            }
+            if (ch === '"') {
+                inString = false;
+                result += ch;
+                i++;
+                continue;
+            }
+            if (ch.charCodeAt(0) < 0x20) {
+                result += escapeMap[ch] || '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0');
+                i++;
+                continue;
+            }
+            result += ch;
+            i++;
+        } else {
+            if (ch === '"') {
+                inString = true;
+            }
+            result += ch;
+            i++;
+        }
+    }
+    return result;
+}
+
 function handleMvsSubmit(req, res) {
     console.log('[MVS Submit] 收到MVS服务提交请求');
 
@@ -198,7 +235,9 @@ function handleMvsSubmit(req, res) {
     req.on('end', () => {
         try {
             const bodyBuffer = Buffer.concat(body);
-            const requestData = JSON.parse(bodyBuffer.toString());
+            const rawBody = bodyBuffer.toString();
+            const sanitizedBody = sanitizeJsonString(rawBody);
+            const requestData = JSON.parse(sanitizedBody);
 
             console.log('[MVS Submit] 请求数据:', JSON.stringify(requestData, null, 2));
 
