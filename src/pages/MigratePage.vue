@@ -1,9 +1,10 @@
 <template>
+  <div class="page-wrapper">
   <AppHeader />
-  <main class="container mx-auto px-4 py-8">
-    <div class="card mb-8">
-      <h2 class="text-xl font-bold mb-6 flex items-center">
-        <i class="fa fa-cogs text-primary mr-2"></i>迁移任务配置
+  <main class="page-content">
+    <div class="card p-6 mb-6">
+      <h2 class="section-title">
+        <i class="fa fa-cogs"></i>迁移任务配置
       </h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
@@ -36,7 +37,7 @@
               </div>
             </div>
             <div class="form-item">
-              <label class="form-label">服务名/SID</label>
+              <label class="form-label">服务名 / SID</label>
               <input v-model="sourceForm.serviceName" type="text" class="form-input" />
             </div>
             <div class="form-item">
@@ -140,9 +141,9 @@
       </div>
     </div>
 
-    <div class="card mb-8">
-      <h2 class="text-xl font-bold mb-6 flex items-center">
-        <i class="fa fa-code text-primary mr-2"></i>智能SQL改写
+    <div class="card p-6 mb-6">
+      <h2 class="section-title">
+        <i class="fa fa-code"></i>智能SQL改写
       </h2>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div>
@@ -187,9 +188,9 @@
       </div>
     </div>
 
-    <div class="card mb-8">
-      <h2 class="text-xl font-bold mb-6 flex items-center">
-        <i class="fa fa-tasks text-primary mr-2"></i>迁移执行管理
+    <div class="card p-6 mb-6">
+      <h2 class="section-title">
+        <i class="fa fa-tasks"></i>迁移执行管理
       </h2>
       <div class="mb-6">
         <div class="flex justify-between items-center mb-2">
@@ -219,7 +220,7 @@
           <i class="fa fa-pause mr-2"></i>暂停迁移
         </button>
         <button class="bg-warning text-white px-4 py-2 rounded-lg hover:bg-warning/90 transition-colors">
-          <i class="fa fa-step-forward mr-2"></i>跳过当前表
+          <i class="fa fa-step-forward mr-2"></i>跳过当前步
         </button>
         <button class="bg-danger text-white px-4 py-2 rounded-lg hover:bg-danger/90 transition-colors">
           <i class="fa fa-stop mr-2"></i>终止迁移
@@ -253,7 +254,7 @@
               </div>
             </div>
             <div class="bg-primary/5 p-3 rounded border border-primary/20">
-              <p class="text-sm">✅ 迁移进程已暂停，保存当前状态（已迁移1024/1256张表）</p>
+              <p class="text-sm">✅ 迁移进程已暂停，保存当前状态（已迁移 1024/1256 张表）</p>
               <p class="text-xs text-gray-600 mt-1">修复异常后可直接从emp表继续迁移，无需从头开始</p>
             </div>
           </div>
@@ -292,9 +293,9 @@
       </div>
     </div>
 
-    <div class="card mb-8">
-      <h2 class="text-xl font-bold mb-6 flex items-center">
-        <i class="fa fa-vial text-primary mr-2"></i>智能测试用例生成与回归验证
+    <div class="card p-6 mb-6">
+      <h2 class="section-title">
+        <i class="fa fa-vial"></i>智能测试用例生成与回归验证
       </h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -340,7 +341,7 @@
             <div class="text-center">
               <div class="text-3xl font-bold text-primary">78%</div>
               <div class="text-sm text-gray-600 mt-1">测试用例执行中</div>
-              <div class="text-xs text-gray-500 mt-2">预计剩余：8分钟</div>
+              <div class="text-xs text-gray-500 mt-2">预计剩余 3 分钟</div>
             </div>
           </div>
           <div class="mt-4 space-y-2 text-sm">
@@ -433,6 +434,7 @@
     </div>
   </main>
   <AppFooter />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -562,8 +564,8 @@ GROUP BY deptno;`
 const migrationSteps = [
   { title: '源库连接验证', desc: '已成功连接到Oracle 19c数据库，版本验证通过', status: 'completed' },
   { title: '目标库连接验证', desc: '已成功连接到vastbase数据库，权限验证通过', status: 'completed' },
-  { title: '结构解析与转换', desc: '已解析1256张表结构，完成98%的结构转换', status: 'completed' },
-  { title: '数据迁移 (多线程)', desc: '8个并行线程正在迁移数据，已完成85%，当前迁移emp表', status: 'active' },
+  { title: '结构解析与转换', desc: '已解析 256 张表结构，完成 98% 的结构转换', status: 'completed' },
+  { title: '数据迁移 (多线程)', desc: '8个并行线程正在迁移数据，已完成 85%，当前迁移emp表', status: 'active' },
   { title: '索引与约束创建', desc: '等待数据迁移完成', status: 'pending' },
   { title: '数据一致性校验', desc: '等待索引创建完成', status: 'pending' },
   { title: '迁移完成确认', desc: '等待校验完成', status: 'pending' },
@@ -600,16 +602,16 @@ const sensitiveAlerts = [
 const migrationLog = `2026-03-19 10:00:00 [INFO] 开始迁移任务: Oracle → vastbase
 2026-03-19 10:00:05 [INFO] 源库连接成功: 192.168.1.100:1521/ORCLCDB
 2026-03-19 10:00:08 [INFO] 目标库连接成功: 192.168.1.101:5236/DM8
-2026-03-19 10:00:10 [INFO] 开始解析源库结构，共1256张表
+2026-03-19 10:00:10 [INFO] 开始解析源库结构，共 256 张表
 2026-03-19 10:05:30 [INFO] 结构解析完成，开始转换表结构
 2026-03-19 10:10:25 [INFO] 表结构转换完成，创建目标库表结构
 2026-03-19 10:15:40 [INFO] 启动8个并行迁移线程
-2026-03-19 10:15:45 [INFO] 线程1开始迁移dept表，共4条记录
-2026-03-19 10:15:45 [INFO] 线程2开始迁移emp表，共14条记录
-2026-03-19 10:15:46 [INFO] 线程3开始迁移salgrade表，共5条记录
+2026-03-19 10:15:45 [INFO] 线程1开始迁移dept表，共 4 条记录
+2026-03-19 10:15:45 [INFO] 线程2开始迁移emp表，共 14 条记录
+2026-03-19 10:15:46 [INFO] 线程3开始迁移salgrade表，共 5 条记录
 2026-03-19 10:15:47 [SUCCESS] 线程1完成dept表迁移，4条记录
 2026-03-19 10:15:48 [SUCCESS] 线程3完成salgrade表迁移，5条记录
-2026-03-19 10:15:50 [INFO] 线程1开始迁移bonus表，共0条记录
+2026-03-19 10:15:50 [INFO] 线程1开始迁移bonus表，共 0 条记录
 2026-03-19 10:15:52 [ERROR] 线程2迁移emp表失败: 数据类型转换错误
 2026-03-19 10:15:53 [INFO] 迁移进程暂停，保存当前状态
 2026-03-19 10:15:54 [DIAGNOSIS] 根因分析: sal字段 NUMBER(8,2) 精度溢出
@@ -671,8 +673,7 @@ function resultIcon(status: TcStatus) {
 const oracleResult = `SELECT COUNT(*) FROM emp 
 WHERE deptno IS NULL;
 
-执行结果：
-COUNT(*)
+执行结果：COUNT(*)
 --------
 0
 
@@ -681,8 +682,7 @@ COUNT(*)
 const vastbaseResult = `SELECT COUNT(*) FROM emp 
 WHERE deptno IS NULL;
 
-执行结果：
-COUNT(*)
+执行结果：COUNT(*)
 --------
 NULL
 

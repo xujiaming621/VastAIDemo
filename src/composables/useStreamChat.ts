@@ -2,6 +2,15 @@ import { ref, shallowRef, onUnmounted } from 'vue'
 import { streamChatMessage } from '@/api'
 import type { DifySSEEvent } from '@/types'
 
+export interface WorkflowNode {
+  nodeId: string
+  nodeType: string
+  title: string
+  status: 'running' | 'succeeded' | 'failed'
+  elapsedTime?: number
+  totalTokens?: number
+}
+
 interface UseStreamChatOptions {
   onChunk?: (delta: string, fullText: string) => void
   onFinish?: (fullText: string, conversationId: string) => void
@@ -18,6 +27,10 @@ export function useStreamChat(options: UseStreamChatOptions = {}) {
   const conversationId = ref('')
   const error = ref<Error | null>(null)
   const abortController = shallowRef<AbortController | null>(null)
+
+  // Workflow tracking
+  const workflowNodes = ref<WorkflowNode[]>([])
+  const workflowRunning = ref(false)
 
   let renderTimer: ReturnType<typeof requestAnimationFrame> | null = null
   let pendingDelta = ''
@@ -52,6 +65,36 @@ export function useStreamChat(options: UseStreamChatOptions = {}) {
     flushRender()
   }
 
+  const handleWorkflowEvent = (event: any) => {
+    const evtName = event.event
+    if (evtName === 'workflow_started') {
+      workflowRunning.value = true
+      workflowNodes.value = []
+    } else if (evtName === 'node_started') {
+      const d = event.data || {}
+      const existing = workflowNodes.value.find(n => n.nodeId === d.node_id)
+      if (!existing) {
+        workflowNodes.value.push({
+          nodeId: d.node_id,
+          nodeType: d.node_type,
+          title: d.title,
+          status: 'running',
+        })
+      }
+    } else if (evtName === 'node_finished') {
+      const d = event.data || {}
+      const node = workflowNodes.value.find(n => n.nodeId === d.node_id)
+      if (node) {
+        node.status = d.status === 'succeeded' ? 'succeeded' : 'failed'
+        node.elapsedTime = d.elapsed_time
+        const meta = d.execution_metadata || {}
+        node.totalTokens = meta.total_tokens
+      }
+    } else if (evtName === 'workflow_finished') {
+      workflowRunning.value = false
+    }
+  }
+
   const sendMessage = async (
     query: string,
     existingConversationId?: string,
@@ -60,6 +103,8 @@ export function useStreamChat(options: UseStreamChatOptions = {}) {
     isStreaming.value = true
     error.value = null
     streamingText.value = ''
+    workflowNodes.value = []
+    workflowRunning.value = false
     pendingDelta = ''
     lastRenderTime = 0
 
@@ -83,6 +128,9 @@ export function useStreamChat(options: UseStreamChatOptions = {}) {
           if (event.conversation_id && !conversationId.value) {
             conversationId.value = event.conversation_id
           }
+
+          // Handle workflow events
+          handleWorkflowEvent(event)
 
           if (event.event === 'message' && event.answer) {
             throttledAppend(event.answer)
@@ -134,6 +182,8 @@ export function useStreamChat(options: UseStreamChatOptions = {}) {
     conversationId.value = ''
     error.value = null
     pendingDelta = ''
+    workflowNodes.value = []
+    workflowRunning.value = false
   }
 
   onUnmounted(() => {
@@ -145,6 +195,8 @@ export function useStreamChat(options: UseStreamChatOptions = {}) {
     streamingText,
     conversationId,
     error,
+    workflowNodes,
+    workflowRunning,
     sendMessage,
     cancel,
     reset,

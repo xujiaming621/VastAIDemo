@@ -31,6 +31,8 @@ export interface Conversation {
   updatedAt: string
 }
 
+export type { WorkflowNode } from '@/composables/useStreamChat'
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
@@ -38,18 +40,9 @@ export interface ChatMessage {
   timestamp: number
   loading?: boolean
   files?: { name: string }[]
-}
-
-export interface MvsSubmitRequest {
-  [key: string]: unknown
-}
-
-export interface MvsSubmitResponse {
-  success: boolean
-  message: string
-  sessionId: string
-  conversationId: string
-  redirectUrl: string
+  thinkContent?: string
+  beforeThink?: string
+  workflowNodes?: WorkflowNode[]
 }
 
 export interface ChartConfig {

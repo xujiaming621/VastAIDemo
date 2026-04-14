@@ -1,9 +1,10 @@
 <template>
+  <div class="page-wrapper">
   <AppHeader />
-  <main class="container mx-auto px-4 py-8">
+  <main class="page-content">
     <div class="flex justify-between items-center mb-6">
       <div class="flex items-center gap-2">
-        <h1 class="text-xl font-bold text-primary">智能运维监控模块</h1>
+        <h1 class="text-xl font-bold" style="color: var(--primary)">智能运维监控模块</h1>
       </div>
       <div class="flex gap-3 items-center">
         <select v-model="timeRange" class="appearance-none bg-gray-100 text-gray-700 px-4 py-2 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
@@ -79,9 +80,9 @@
       </div>
     </div>
 
-    <div class="card mb-8">
-      <h2 class="text-xl font-bold mb-6 flex items-center">
-        <i class="fa fa-line-chart text-primary mr-2"></i>系统资源监控曲线
+    <div class="card p-6 mb-6">
+      <h2 class="section-title">
+        <i class="fa fa-line-chart"></i>系统资源监控曲线
       </h2>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
@@ -96,9 +97,9 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-      <div class="card">
-        <h2 class="text-xl font-bold mb-4 flex items-center">
-          <i class="fa fa-bar-chart text-primary mr-2"></i>磁盘容量预测
+      <div class="card p-6">
+        <h2 class="section-title">
+          <i class="fa fa-bar-chart"></i>磁盘容量预测
         </h2>
         <div class="h-72"><canvas ref="predictChartRef"></canvas></div>
         <div class="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
@@ -106,7 +107,7 @@
             <i class="fa fa-lightbulb-o text-primary mt-1 mr-2"></i>
             <div>
               <p class="font-medium text-primary">容量预警</p>
-              <p class="text-sm text-gray-700 mt-1">基于近30天的磁盘使用趋势分析，/data分区将在<span class="font-bold text-danger">15天后</span>达到85%的阈值（当前42%），建议提前规划扩容至1TB。</p>
+              <p class="text-sm text-gray-700 mt-1">基于近30天的磁盘使用趋势分析，data分区将在<span class="font-bold text-danger">15天后</span>达到85%的阈值（当前42%），建议提前规划扩容1TB。</p>
               <button class="mt-2 text-primary text-sm font-medium hover:underline">
                 <i class="fa fa-download mr-1"></i>导出详细预测报告
               </button>
@@ -115,9 +116,9 @@
         </div>
       </div>
 
-      <div class="card">
-        <h2 class="text-xl font-bold mb-4 flex items-center">
-          <i class="fa fa-trophy text-primary mr-2"></i>性能TOP排行
+      <div class="card p-6">
+        <h2 class="section-title">
+          <i class="fa fa-trophy"></i>性能TOP排行
         </h2>
         <div class="space-y-6">
           <div>
@@ -178,9 +179,9 @@
       </div>
     </div>
 
-    <div class="card mb-8">
-      <h2 class="text-xl font-bold mb-4 flex items-center">
-        <i class="fa fa-bell text-primary mr-2"></i>智能告警与根因分析
+    <div class="card p-6 mb-6">
+      <h2 class="section-title">
+        <i class="fa fa-bell"></i>智能告警与根因分析
       </h2>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2">
@@ -212,7 +213,7 @@
           <h3 class="font-semibold mb-3 text-gray-700">智能根因分析</h3>
           <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 h-96 overflow-y-auto">
             <div class="mb-4 pb-4 border-b border-gray-200">
-              <h4 class="font-medium text-primary mb-2">内存使用率过高 根因分析</h4>
+              <h4 class="font-medium text-primary mb-2">内存使用率过高根因分析</h4>
               <div class="text-sm space-y-2 text-gray-700">
                 <p><strong>主要原因：</strong></p>
                 <ol class="list-decimal list-inside pl-2 space-y-1">
@@ -261,9 +262,9 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2 class="text-xl font-bold mb-4 flex items-center">
-        <i class="fa fa-link text-primary mr-2"></i>分布式链路追踪
+    <div class="card p-6">
+      <h2 class="section-title">
+        <i class="fa fa-link"></i>分布式链路追踪
       </h2>
       <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-4">
         <div class="flex flex-wrap gap-4 items-center">
@@ -313,6 +314,7 @@
     </div>
   </main>
   <AppFooter />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -359,7 +361,7 @@ interface Alert {
 
 const alerts: Alert[] = [
   {
-    title: '内存使用率过高', desc: '数据库服务器内存使用率持续超过85%达5分钟，当前使用率89% (15.2/16GB)', time: '10分钟前',
+    title: '内存使用率过高', desc: '数据库服务器内存使用率持续超过85%，5分钟，当前使用率89% (15.2/16GB)', time: '10分钟前',
     alertClass: 'alert-danger', icon: 'fa-exclamation-circle', iconColor: 'text-danger', titleColor: 'text-danger',
     buttons: [
       { text: '根因分析', icon: 'fa-search', cls: 'bg-danger/10 text-danger hover:bg-danger/20' },
@@ -383,12 +385,12 @@ const alerts: Alert[] = [
     ],
   },
   {
-    title: '磁盘IO恢复正常', desc: '磁盘IO使用率已从95%降至正常水平(45%)，告警已自动清除', time: '2小时前',
+    title: '磁盘IO恢复正常', desc: '磁盘IO使用率已从75%降至正常水平(45%)，告警已自动清除', time: '2小时前',
     alertClass: 'alert-success', icon: 'fa-check-circle', iconColor: 'text-success', titleColor: 'text-success',
     buttons: [],
   },
   {
-    title: '磁盘容量预测告警', desc: '基于趋势分析，/data分区将在15天后达到85%阈值，建议提前扩容', time: '1天前',
+    title: '磁盘容量预测告警', desc: '基于趋势分析，data分区将在15天后达到85%阈值，建议提前扩容', time: '1天前',
     alertClass: 'alert-warning', icon: 'fa-calendar', iconColor: 'text-warning', titleColor: 'text-warning',
     buttons: [
       { text: '容量规划报告', icon: 'fa-download', cls: 'bg-warning/10 text-warning hover:bg-warning/20' },
@@ -441,14 +443,14 @@ function initCharts() {
       data: {
         labels: hours,
         datasets: [
-          { label: 'CPU使用率 (%)', data: cpuData, borderColor: '#FF7D00', backgroundColor: 'rgba(255,125,0,0.1)', fill: true, tension: 0.4 },
-          { label: '内存使用率 (%)', data: memData, borderColor: '#F53F3F', backgroundColor: 'rgba(245,63,63,0.1)', fill: true, tension: 0.4 },
+          { label: 'CPU使用率(%)', data: cpuData, borderColor: '#FF7D00', backgroundColor: 'rgba(255,125,0,0.1)', fill: true, tension: 0.4 },
+          { label: '内存使用率(%)', data: memData, borderColor: '#F53F3F', backgroundColor: 'rgba(245,63,63,0.1)', fill: true, tension: 0.4 },
         ],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { position: 'top' as const }, tooltip: { mode: 'index', intersect: false } },
-        scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: '使用率 (%)' } }, x: { title: { display: true, text: '时间' } } },
+        scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: '使用率(%)' } }, x: { title: { display: true, text: '时间' } } },
         interaction: { mode: 'nearest', axis: 'x', intersect: false },
       },
     }))
@@ -460,10 +462,10 @@ function initCharts() {
       data: {
         labels: hours,
         datasets: [
-          { label: '磁盘读 (MB/s)', data: diskRead, borderColor: '#165DFF', backgroundColor: 'transparent', tension: 0.4 },
-          { label: '磁盘写 (MB/s)', data: diskWrite, borderColor: '#4080FF', backgroundColor: 'transparent', tension: 0.4 },
-          { label: '网络入 (MB/s)', data: networkIn, borderColor: '#00B42A', backgroundColor: 'transparent', tension: 0.4 },
-          { label: '网络出 (MB/s)', data: networkOut, borderColor: '#86909C', backgroundColor: 'transparent', tension: 0.4 },
+          { label: '磁盘读(MB/s)', data: diskRead, borderColor: '#165DFF', backgroundColor: 'transparent', tension: 0.4 },
+          { label: '磁盘写(MB/s)', data: diskWrite, borderColor: '#4080FF', backgroundColor: 'transparent', tension: 0.4 },
+          { label: '网络入(MB/s)', data: networkIn, borderColor: '#00B42A', backgroundColor: 'transparent', tension: 0.4 },
+          { label: '网络出(MB/s)', data: networkOut, borderColor: '#86909C', backgroundColor: 'transparent', tension: 0.4 },
         ],
       },
       options: {
@@ -484,14 +486,14 @@ function initCharts() {
       data: {
         labels: days,
         datasets: [
-          { label: '磁盘使用率 (%)', data: allData, borderColor: '#165DFF', backgroundColor: 'rgba(22,93,255,0.1)', fill: true, tension: 0.4 },
-          { label: '预警阈值 (85%)', data: Array(45).fill(85), borderColor: '#F53F3F', borderDash: [5, 5], backgroundColor: 'transparent', fill: false, tension: 0 },
+          { label: '磁盘使用率(%)', data: allData, borderColor: '#165DFF', backgroundColor: 'rgba(22,93,255,0.1)', fill: true, tension: 0.4 },
+          { label: '预警阈值(85%)', data: Array(45).fill(85), borderColor: '#F53F3F', borderDash: [5, 5], backgroundColor: 'transparent', fill: false, tension: 0 },
         ],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { position: 'top' as const } },
-        scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: '磁盘使用率 (%)' } }, x: { title: { display: true, text: '天数' } } },
+        scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: '磁盘使用率(%)' } }, x: { title: { display: true, text: '天数' } } },
       },
     }))
   }

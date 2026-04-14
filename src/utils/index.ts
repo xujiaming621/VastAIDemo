@@ -23,19 +23,6 @@ export function truncateText(text: string, maxLen: number): string {
   return text.substring(0, maxLen) + '...'
 }
 
-export function isMvsTicketJson(text: string): boolean {
-  try {
-    const obj = JSON.parse(text)
-    return (
-      typeof obj === 'object' &&
-      obj !== null &&
-      ('issue_category' in obj || 'issue_title' in obj || 'issue_description' in obj)
-    )
-  } catch {
-    return false
-  }
-}
-
 export function sanitizeJsonString(str: string): string {
   const escapeMap: Record<string, string> = {
     '\n': '\\n',

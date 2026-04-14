@@ -1,4 +1,4 @@
-import type { DifyChatRequest, DifySSEEvent, MvsSubmitRequest, MvsSubmitResponse } from '@/types'
+import type { DifyChatRequest, DifySSEEvent } from '@/types'
 
 const DIFY_BASE = '/api/dify/v1'
 const DIFY_USER_ID = 'mvs-user'
@@ -125,12 +125,3 @@ export async function uploadFile(file: File): Promise<string> {
   return data.id
 }
 
-export async function submitMvsTicket(data: MvsSubmitRequest): Promise<MvsSubmitResponse> {
-  const res = await fetch('/api/mvs/submit', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-  if (!res.ok) throw new Error(`MVS submit failed: ${res.status}`)
-  return res.json()
-}

@@ -2,50 +2,167 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Design Tokens ─────────────────────────────────────────── */
+:root {
+  --primary: #165DFF;
+  --primary-light: #4080FF;
+  --primary-dim: rgba(22, 93, 255, 0.08);
+  --primary-glow: rgba(22, 93, 255, 0.18);
+  --success: #00B42A;
+  --warning: #FF7D00;
+  --danger: #F53F3F;
+  --info: #0FC6C2;
+  --surface: #ffffff;
+  --surface-2: #F7F8FC;
+  --surface-3: #EEF0F6;
+  --border: rgba(0, 0, 0, 0.07);
+  --border-strong: rgba(0, 0, 0, 0.12);
+  --text-1: #1D2129;
+  --text-2: #4E5969;
+  --text-3: #86909C;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-primary: 0 4px 16px rgba(22, 93, 255, 0.22);
+}
+
+/* ─── Base ───────────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+body { margin: 0; padding: 0; background: var(--surface-2); color: var(--text-1); }
+
+/* ─── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D0D3D9; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #A9ADB5; }
+
+/* ─── Utility Components ─────────────────────────────────────── */
 @layer utilities {
-  .content-auto {
-    content-visibility: auto;
+  /* Cards */
+  .card {
+    @apply bg-white rounded-2xl border border-gray-100;
+    box-shadow: var(--shadow-sm);
   }
+  .card-hover {
+    @apply transition-all duration-300;
+  }
+  .card-hover:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  /* Module card on homepage */
   .module-card {
-    @apply bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100;
+    @apply bg-white rounded-2xl border border-gray-100 transition-all duration-300;
+    box-shadow: var(--shadow-sm);
+  }
+  .module-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: rgba(22, 93, 255, 0.15);
   }
   .module-header {
-    @apply text-primary font-bold flex items-center gap-2 mb-4;
+    @apply font-bold flex items-center gap-3 mb-4 text-xl;
+    color: var(--primary);
   }
   .feature-item {
-    @apply flex items-start gap-2 py-2 border-b border-gray-50 last:border-0;
+    @apply flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0;
   }
+
+  /* Navigation */
   .nav-link {
-    @apply px-4 py-2 rounded-lg hover:bg-primary/10 transition-colors duration-200 cursor-pointer;
+    @apply flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200;
+    color: var(--text-2);
   }
+  .nav-link:hover { background: var(--primary-dim); color: var(--primary); }
   .nav-link.active {
-    @apply bg-primary text-white;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: white;
+    box-shadow: var(--shadow-primary);
   }
-}
 
-html {
-  scroll-behavior: smooth;
-}
+  /* Buttons */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 cursor-pointer border-0;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    box-shadow: var(--shadow-primary);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 6px 20px rgba(22, 93, 255, 0.32);
+    transform: translateY(-1px);
+  }
+  .btn-primary:active { transform: translateY(0); }
 
-body {
-  margin: 0;
-  padding: 0;
-}
+  /* Forms */
+  .form-item { @apply flex flex-col gap-1.5; }
+  .form-label { @apply text-sm font-medium; color: var(--text-2); }
+  .form-input {
+    @apply w-full px-3 py-2.5 rounded-xl text-sm transition-all duration-200 outline-none;
+    border: 1.5px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text-1);
+  }
+  .form-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-dim);
+  }
+  .form-input:hover:not(:focus) { border-color: #C0C4CC; }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
+  /* Stat cards */
+  .stat-card {
+    @apply bg-white rounded-2xl p-5 flex flex-col border border-gray-100;
+    box-shadow: var(--shadow-sm);
+  }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
+  /* Assessment cards */
+  .assessment-card {
+    @apply rounded-xl p-4 border;
+  }
+  .risk-low { @apply bg-green-50 border-green-200; }
+  .risk-medium { @apply bg-amber-50 border-amber-200; }
+  .risk-high { @apply bg-red-50 border-red-200; }
 
-::-webkit-scrollbar-thumb {
-  background: #c9cdd4;
-  border-radius: 3px;
-}
+  /* Alert items */
+  .alert-item {
+    @apply flex items-start p-4 rounded-xl border mb-2 transition-all duration-200;
+  }
+  .alert-item:hover { transform: translateX(2px); }
+  .alert-danger { @apply bg-red-50 border-red-200; }
+  .alert-warning { @apply bg-amber-50 border-amber-200; }
+  .alert-info { @apply bg-blue-50 border-blue-200; }
+  .alert-success { @apply bg-green-50 border-green-200; }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #a0a4ab;
+  /* Text colors */
+  .text-primary { color: var(--primary); }
+  .text-success { color: var(--success); }
+  .text-warning { color: var(--warning); }
+  .text-danger { color: var(--danger); }
+  .text-info { color: var(--info); }
+  .bg-success { background-color: var(--success); }
+  .bg-warning { background-color: var(--warning); }
+  .bg-danger { background-color: var(--danger); }
+  .bg-info { background-color: var(--info); }
+
+  /* Page wrapper */
+  .page-wrapper {
+    @apply min-h-screen;
+    background: var(--surface-2);
+  }
+  .page-content {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+
+  /* Section title */
+  .section-title {
+    @apply text-xl font-bold flex items-center gap-2 mb-6;
+    color: var(--text-1);
+  }
+  .section-title i { color: var(--primary); }
 }

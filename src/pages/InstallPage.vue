@@ -1,9 +1,10 @@
-<template>
+﻿<template>
+  <div class="page-wrapper">
   <AppHeader />
-  <main class="container mx-auto px-4 py-8">
-    <div class="card mb-8">
-      <h2 class="text-xl font-bold mb-6 flex items-center">
-        <i class="fa fa-database text-primary mr-2"></i>迁移基础信息
+  <main class="page-content">
+    <div class="card p-6 mb-6">
+      <h2 class="section-title">
+        <i class="fa fa-database"></i>迁移基础信息
       </h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
@@ -99,15 +100,14 @@
         </div>
       </div>
       <div class="mt-6 flex justify-center">
-        <button class="btn-primary px-8 py-3 text-lg" @click="startAssessment">
+        <button class="btn-primary" @click="startAssessment">
           <i class="fa fa-refresh mr-2"></i>开始智能评估
         </button>
       </div>
     </div>
-
-    <div v-if="assessed" class="card mb-8">
-      <h2 class="text-xl font-bold mb-6 flex items-center">
-        <i class="fa fa-cogs text-primary mr-2"></i>数据库配置评估
+    <div v-if="assessed" class="card p-6 mb-6">
+      <h2 class="section-title">
+        <i class="fa fa-cogs"></i>数据库配置评估
       </h2>
       <div class="mb-6">
         <h3 class="font-semibold mb-4 text-gray-800">源库资源使用统计（近30天）</h3>
@@ -152,9 +152,9 @@
       </div>
     </div>
 
-    <div v-if="assessed" class="card mb-8">
-      <h2 class="text-xl font-bold mb-6 flex items-center">
-        <i class="fa fa-exchange text-primary mr-2"></i>数据库兼容性评估
+    <div v-if="assessed" class="card p-6 mb-6">
+      <h2 class="section-title">
+        <i class="fa fa-exchange"></i>数据库兼容性评估
       </h2>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div v-for="cat in compatCategories" :key="cat.title" class="assessment-card">
@@ -202,9 +202,9 @@
       </div>
     </div>
 
-    <div v-if="assessed" class="card mb-8">
-      <h2 class="text-xl font-bold mb-6 flex items-center">
-        <i class="fa fa-puzzle-piece text-primary mr-2"></i>应用框架评估
+    <div v-if="assessed" class="card p-6 mb-6">
+      <h2 class="section-title">
+        <i class="fa fa-puzzle-piece"></i>应用框架评估
       </h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div class="assessment-card">
@@ -219,8 +219,8 @@
             </div>
           </div>
           <div class="text-sm text-center mt-2">
-            <p>整体改造复杂度：<span class="font-medium text-warning">中等</span></p>
-            <p class="mt-1">预计改造工作量：60人天</p>
+            <p>整体改造复杂度为<span class="font-medium text-warning">中等</span></p>
+            <p class="mt-1">预计改造工作量约80人天</p>
           </div>
         </div>
         <div class="assessment-card">
@@ -245,9 +245,9 @@
       </div>
     </div>
 
-    <div v-if="assessed" class="card mb-8">
-      <h2 class="text-xl font-bold mb-6 flex items-center">
-        <i class="fa fa-calculator text-primary mr-2"></i>迁移工作量评估
+    <div v-if="assessed" class="card p-6 mb-6">
+      <h2 class="section-title">
+        <i class="fa fa-calculator"></i>迁移工作量评估
       </h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -285,7 +285,7 @@
         </div>
       </div>
       <div class="mt-8 text-center">
-        <button class="btn-primary px-8 py-3 text-lg">
+        <button class="btn-primary">
           <i class="fa fa-file-text-o mr-2"></i>一键生成完整迁移评估报告
         </button>
         <p class="text-sm text-gray-500 mt-2">报告包含：评估详情、风险清单、改造方案、成本预算、实施计划</p>
@@ -293,6 +293,7 @@
     </div>
   </main>
   <AppFooter />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -334,15 +335,15 @@ const charts: Chart[] = []
 
 const configAssessments = [
   { title: 'CPU配置评估', description: '源库CPU峰值使用率65%（16核），目标库配置32核，CPU资源充足，建议配置CPU亲和性优化性能。', riskClass: 'risk-low', icon: 'fa-check-circle' },
-  { title: '内存配置评估', description: '源库内存峰值使用率85%（64GB），目标库配置128GB，内存资源充足，建议将缓存池配置为80GB。', riskClass: 'risk-low', icon: 'fa-check-circle' },
-  { title: '存储配置评估', description: '源库已使用800GB，目标库配置4TB存储，基础容量充足，但<span class="font-medium">建议增加20%冗余</span>（约1.6TB），考虑数据增长和备份需求。', riskClass: 'risk-medium', icon: 'fa-exclamation-triangle' },
-  { title: 'IOPS配置评估', description: '源库IOPS峰值8000，目标库SSD理论IOPS 20000，但实际测试仅达到12000，<span class="font-medium">建议优化存储阵列配置</span>，确保满足业务高峰期IO需求。', riskClass: 'risk-medium', icon: 'fa-exclamation-triangle' },
+  { title: '内存配置评估', description: '源库内存峰值使用率85%（64GB），目标库配置128GB，内存资源充足，建议将缓存池配置为90GB。', riskClass: 'risk-low', icon: 'fa-check-circle' },
+  { title: '存储配置评估', description: '源库已使用600GB，目标库配置4TB存储，基础容量充足，但<span class="font-medium">建议增加20%冗余</span>（约1.6TB），考虑数据增长和备份需求。', riskClass: 'risk-medium', icon: 'fa-exclamation-triangle' },
+  { title: 'IOPS配置评估', description: '源库IOPS峰值8000，目标库SSD理论IOPS 20000，但实际测试仅达到12000。<span class="font-medium">建议优化存储阵列配置</span>，确保满足业务高峰期IO需求。', riskClass: 'risk-medium', icon: 'fa-exclamation-triangle' },
 ]
 
 const configTable = [
   { name: 'innodb_buffer_pool_size', value: '80GB', basis: '源库内存使用率85%，目标库128GB × 70%', note: 'vastbase对应BUFFER_POOL_SIZE' },
   { name: 'max_connections', value: '2000', basis: '源库峰值连接数1200 × 1.5倍冗余', note: 'vastbase对应MAX_SESSIONS' },
-  { name: '日志文件大小', value: '2GB × 4', basis: '源库日志切换频率每小时2次', note: 'vastbase对应REDOLF_SIZE' },
+  { name: '日志文件大小', value: '2GB × 4', basis: '源库日志切换频率每小时3次', note: 'vastbase对应REDOLF_SIZE' },
   { name: '临时表空间', value: '100GB', basis: '源库最大临时表大小80GB', note: '需开启自动扩展' },
   { name: '字符集', value: 'UTF8MB4', basis: '源库使用AL32UTF8，兼容UTF8MB4', note: '统一字符集避免乱码' },
 ]
@@ -445,10 +446,10 @@ function initCharts() {
     charts.push(new Chart(resourceChartRef.value, {
       type: 'line',
       data: {
-        labels: ['0点', '4点', '8点', '12点', '16点', '20点'],
+        labels: ['0时', '4时', '8时', '12时', '16时', '20时'],
         datasets: [
-          { label: 'CPU使用率 (%)', data: [20, 15, 40, 65, 55, 30], borderColor: '#FF7D00', backgroundColor: 'rgba(255,125,0,0.1)', fill: true, tension: 0.4 },
-          { label: '内存使用率 (%)', data: [70, 65, 80, 85, 80, 75], borderColor: '#F53F3F', backgroundColor: 'rgba(245,63,63,0.1)', fill: true, tension: 0.4 },
+          { label: 'CPU使用率(%)', data: [20, 15, 40, 65, 55, 30], borderColor: '#FF7D00', backgroundColor: 'rgba(255,125,0,0.1)', fill: true, tension: 0.4 },
+          { label: '内存使用率(%)', data: [70, 65, 80, 85, 80, 75], borderColor: '#F53F3F', backgroundColor: 'rgba(245,63,63,0.1)', fill: true, tension: 0.4 },
         ],
       },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' as const } }, scales: { y: { beginAtZero: true, max: 100 } } },
