@@ -31,7 +31,14 @@ export interface Conversation {
   updatedAt: string
 }
 
-export type { WorkflowNode } from '@/composables/useStreamChat'
+export interface WorkflowNode {
+  nodeId: string
+  nodeType: string
+  title: string
+  status: 'running' | 'succeeded' | 'failed'
+  elapsedTime?: number
+  totalTokens?: number
+}
 
 export interface ChatMessage {
   id: string
@@ -43,6 +50,7 @@ export interface ChatMessage {
   thinkContent?: string
   beforeThink?: string
   workflowNodes?: WorkflowNode[]
+  ticketData?: Record<string, any> | null
 }
 
 export interface ChartConfig {

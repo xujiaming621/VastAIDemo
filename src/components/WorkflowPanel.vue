@@ -31,7 +31,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { WorkflowNode } from '@/composables/useStreamChat'
+import type { WorkflowNode } from '@/types'
 
 defineProps<{ nodes: WorkflowNode[]; running: boolean }>()
 const expanded = ref(false)

@@ -53,9 +53,6 @@
             <button class="icon-btn sidebar-toggle" @click="toggleSidebar" title="对话列表">
               <i class="fa fa-bars" />
             </button>
-            <router-link to="/" class="icon-btn" title="返回首页">
-              <i class="fa fa-arrow-left" />
-            </router-link>
             <div class="agent-info">
               <div class="agent-avatar">
                 <img src="/avatar.png" alt="量仔" />
@@ -106,8 +103,9 @@
               <!-- User message -->
               <template v-if="msg.role === 'user'">
                 <div class="user-msg-wrap">
-                  <div class="user-bubble">
-                    <div class="markdown-content" v-html="renderContent(msg.content)" />
+                  <div class="user-bubble" :class="{ 'ticket-bubble': msg.ticketData }">
+                    <MvsTicketCard v-if="msg.ticketData" :ticket="msg.ticketData" />
+                    <div v-else class="markdown-content" v-html="renderContent(msg.content)" />
                     <div v-if="msg.files && msg.files.length" class="msg-files">
                       <div v-for="(f, idx) in msg.files" :key="idx" class="msg-file-tag">
                         <i class="fa fa-file-o" />
@@ -253,18 +251,26 @@ import { marked } from 'marked'
 import AppHeader from '@/components/AppHeader.vue'
 import WorkflowPanel from '@/components/WorkflowPanel.vue'
 import ThinkBlock from '@/components/ThinkBlock.vue'
+import MvsTicketCard from '@/components/MvsTicketCard.vue'
 import { useChatStore } from '@/stores/chat'
 import { useStreamChat } from '@/composables/useStreamChat'
 import {
   fetchConversationMessages,
   fetchConversations,
   uploadFile,
+  DEFAULT_USER_ID,
 } from '@/api'
 import { generateId, formatTime } from '@/utils'
 import type { ChatMessage, Conversation, DifyFile } from '@/types'
 
 const route = useRoute()
 const chatStore = useChatStore()
+
+// Determine userId: MVS sessions use the session_id as user, others use default
+const userId = computed(() => {
+  const sessionId = route.query.session_id as string
+  return sessionId ? sessionId : DEFAULT_USER_ID
+})
 
 const suggestions = [
   '如何排查 vastbase 连接超时问题？',
@@ -282,6 +288,7 @@ const {
   sendMessage: streamSend,
   reset: streamReset,
 } = useStreamChat({
+  userId: userId.value,
   onFinish(fullText) {
     const parsed = parseAnswer(fullText)
     chatStore.addMessage({
@@ -563,7 +570,7 @@ async function handleSend() {
             url: file.name,
           } as any)
         } else {
-          const fileId = await uploadFile(file)
+          const fileId = await uploadFile(file, userId.value)
           if (fileId) difyFiles.push({ type: 'document', transfer_method: 'local_file', upload_file_id: fileId })
         }
       }
@@ -603,7 +610,7 @@ function handleNewChat() {
 async function loadConversations() {
   loadingConversations.value = true
   try {
-    const data = await fetchConversations()
+    const data = await fetchConversations(userId.value)
     conversations.value = (data as any[]).map((c: any) => ({
       id: c.id,
       title: c.name || c.intro || '未命名对话',
@@ -628,7 +635,7 @@ async function handleSwitchConversation(convId: string) {
 
   try {
     setStatus('加载中...', 'loading')
-    const data = await fetchConversationMessages(convId)
+    const data = await fetchConversationMessages(convId, userId.value)
     const msgs = (data as any[]).reverse()
     let assistantCount = 0
     let userCount = 0
@@ -670,7 +677,7 @@ function stopMessagePolling() {
 
 async function checkForNewMessages(convId: string, lastCount: number): Promise<boolean> {
   try {
-    const data = await fetchConversationMessages(convId)
+    const data = await fetchConversationMessages(convId, userId.value)
     const msgs = (data as any[]).reverse()
     const allAssistant = msgs.filter((m: any) => m.answer && m.answer.trim())
     const newMessages = allAssistant.slice(lastCount)
@@ -695,6 +702,48 @@ async function checkForNewMessages(convId: string, lastCount: number): Promise<b
     }
     pollingCurrentInterval.value = POLLING_INTERVALS[Math.min(pollingRetryCount.value, POLLING_INTERVALS.length - 1)]
     return false
+  }
+}
+
+async function fetchTicketAndStream(sessionId: string) {
+  try {
+    const res = await fetch(`/api/mvs/ticket/${sessionId}`)
+    if (!res.ok) {
+      setStatus('工单不存在或已过期', 'error')
+      return
+    }
+    const data = await res.json()
+    if (!data.success || !data.query) {
+      setStatus('工单内容为空', 'error')
+      return
+    }
+
+    // 展示用户消息
+    chatStore.addMessage({
+      id: generateId(),
+      role: 'user',
+      content: data.query,
+      timestamp: Date.now(),
+      ticketData: data.ticketData || null,
+    })
+    scrollToBottom()
+    setStatus('正在思考...', 'thinking')
+
+    // 直接发起流式请求
+    await streamSend(data.query, undefined, undefined)
+
+    if (streamConversationId.value && !chatStore.currentConversationId) {
+      chatStore.setConversationId(streamConversationId.value)
+    }
+    await loadConversations()
+  } catch (err: any) {
+    chatStore.addMessage({
+      id: generateId(),
+      role: 'assistant',
+      content: `抱歉，发生了错误：${err.message}`,
+      timestamp: Date.now(),
+    })
+    setStatus('连接错误', 'error')
   }
 }
 
@@ -736,7 +785,14 @@ watch(streamingText, () => scrollToBottom())
 onMounted(async () => {
   document.addEventListener('click', handleClickOutsideAttach)
   const convIdFromUrl = route.query.conversation_id as string
-  if (convIdFromUrl) {
+  const sessionIdFromUrl = route.query.session_id as string
+
+  if (sessionIdFromUrl) {
+    // MVS 工单场景：拉取工单内容，直接在前端发起流式请求
+    setStatus('加载工单中...', 'loading')
+    await loadConversations()
+    await fetchTicketAndStream(sessionIdFromUrl)
+  } else if (convIdFromUrl) {
     chatStore.setConversationId(convIdFromUrl)
     streamConversationId.value = convIdFromUrl
     await handleSwitchConversation(convIdFromUrl)
@@ -770,7 +826,13 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-/* ─── Sidebar ────────────────────────────────────────────────── */
+.user-bubble.ticket-bubble {
+  background: transparent;
+  border: none;
+  padding: 0;
+  max-width: 700px;
+  box-shadow: none;
+}
 .sidebar {
   width: 260px;
   background: white;

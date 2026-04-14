@@ -1,20 +1,12 @@
 import { ref, shallowRef, onUnmounted } from 'vue'
 import { streamChatMessage } from '@/api'
-import type { DifySSEEvent } from '@/types'
-
-export interface WorkflowNode {
-  nodeId: string
-  nodeType: string
-  title: string
-  status: 'running' | 'succeeded' | 'failed'
-  elapsedTime?: number
-  totalTokens?: number
-}
+import type { DifySSEEvent, WorkflowNode } from '@/types'
 
 interface UseStreamChatOptions {
   onChunk?: (delta: string, fullText: string) => void
   onFinish?: (fullText: string, conversationId: string) => void
   onError?: (error: Error) => void
+  userId?: string
 }
 
 const MAX_RETRIES = 5
@@ -120,6 +112,7 @@ export function useStreamChat(options: UseStreamChatOptions = {}) {
           existingConversationId || conversationId.value || undefined,
           files as any,
           controller.signal,
+          options.userId,
         )
 
         for await (const event of stream) {

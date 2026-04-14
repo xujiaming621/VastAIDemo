@@ -9,6 +9,7 @@ import url from 'url';
 import os from 'os';
 
 const PORT = parseInt(process.env.PORT) || 8081;
+const PUBLIC_PORT = parseInt(process.env.PUBLIC_PORT) || PORT;
 
 const LOCAL_IP = process.env.LOCAL_IP || '43.139.131.125';
 const DIFY_API_BASE = process.env.DIFY_API_BASE || 'http://101.35.56.39';
@@ -42,6 +43,23 @@ const server = http.createServer((req, res) => {
 
     if (pathname === '/api/health' && req.method === 'GET') {
         handleHealthCheck(req, res);
+        return;
+    }
+
+    if (pathname === '/api/mvs/submit' && (req.method === 'POST' || req.method === 'OPTIONS')) {
+        handleMvsSubmit(req, res);
+        return;
+    }
+
+    const statusMatch = pathname.match(/^\/api\/mvs\/status\/([^/]+)$/);
+    if (statusMatch && req.method === 'GET') {
+        handleMvsStatus(req, res, statusMatch[1]);
+        return;
+    }
+
+    const ticketMatch = pathname.match(/^\/api\/mvs\/ticket\/([^/]+)$/);
+    if (ticketMatch && req.method === 'GET') {
+        handleMvsTicket(req, res, ticketMatch[1]);
         return;
     }
 
@@ -184,6 +202,136 @@ function handleDifyProxy(req, res, pathname, parsedUrl) {
     });
 }
 
+
+// 存储异步提交任务的状态
+const mvsTaskMap = new Map();
+
+function handleMvsStatus(req, res, sessionId) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', 'application/json');
+
+    const task = mvsTaskMap.get(sessionId);
+    if (!task) {
+        res.writeHead(404);
+        res.end(JSON.stringify({ success: false, message: '任务不存在或已过期' }));
+        return;
+    }
+
+    res.writeHead(200);
+    res.end(JSON.stringify(task));
+}
+
+function handleMvsTicket(req, res, sessionId) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', 'application/json');
+
+    const task = mvsTaskMap.get(sessionId);
+    if (!task) {
+        res.writeHead(404);
+        res.end(JSON.stringify({ success: false, message: '工单不存在或已过期' }));
+        return;
+    }
+
+    res.writeHead(200);
+    res.end(JSON.stringify({ success: true, query: task.query, ticketData: task.ticketData || null, sessionId }));
+}
+
+function handleMvsSubmit(req, res) {
+    console.log('[MVS] 收到工单提交请求');
+
+    // CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+    }
+
+    let body = [];
+    req.on('data', chunk => body.push(chunk));
+    req.on('end', () => {
+        let ticketData = {};
+        try {
+            const raw = Buffer.concat(body).toString('utf8').trim();
+            console.log('[MVS] raw body:', JSON.stringify(raw));
+            if (raw) {
+                ticketData = JSON.parse(raw);
+            }
+        } catch (e) {
+            console.error('[MVS] JSON parse error:', e.message);
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: `无效的 JSON 格式: ${e.message}` }));
+            return;
+        }
+
+        const sessionId = `mvs-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+        const redirectUrl = `http://${LOCAL_IP}:${PUBLIC_PORT}/chat?session_id=${sessionId}`;
+
+        // 只存储工单内容，不再调用 Dify，等用户打开页面后由前端发起流式请求
+        const query = formatTicketForDify(ticketData);
+        mvsTaskMap.set(sessionId, { status: 'pending', sessionId, query, ticketData });
+
+        // 1小时后清理
+        setTimeout(() => mvsTaskMap.delete(sessionId), 3600000);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            success: true,
+            message: '工单已接收',
+            sessionId,
+            redirectUrl,
+        }));
+    });
+
+    req.on('error', err => {
+        console.error('[MVS] 请求读取错误:', err.message);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, message: '服务器内部错误' }));
+    });
+}
+
+function formatTicketForDify(data) {
+    if (!data || typeof data !== 'object') return String(data);
+
+    const lines = ['【MVS工单信息】'];
+    const formatValue = (val, indent = '') => {
+        if (val === null || val === undefined || val === '') return null;
+        if (typeof val === 'object' && !Array.isArray(val)) {
+            const entries = Object.entries(val).filter(([, v]) => v !== null && v !== undefined && v !== '');
+            if (entries.length === 0) return null;
+            return entries.map(([k, v]) => {
+                const formatted = formatValue(v, indent + '  ');
+                return formatted ? `${indent}  ${k}: ${formatted}` : null;
+            }).filter(Boolean).join('\n');
+        }
+        if (Array.isArray(val)) {
+            const items = val.filter(v => v !== null && v !== undefined && v !== '');
+            if (items.length === 0) return null;
+            return items.map((item, i) => {
+                const formatted = formatValue(item, indent + '  ');
+                return formatted ? `${indent}  [${i + 1}] ${formatted}` : null;
+            }).filter(Boolean).join('\n');
+        }
+        return String(val);
+    };
+
+    for (const [key, value] of Object.entries(data)) {
+        if (value === null || value === undefined || value === '') continue;
+        const formatted = formatValue(value);
+        if (formatted) {
+            if (typeof value === 'object') {
+                lines.push(`\n${key}:\n${formatted}`);
+            } else {
+                lines.push(`${key}: ${formatted}`);
+            }
+        }
+    }
+
+    return lines.join('\n');
+}
 
 function handleHealthCheck(req, res) {
     console.log('[Health] 收到健康检查请求');

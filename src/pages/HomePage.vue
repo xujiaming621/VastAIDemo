@@ -60,7 +60,17 @@ import imgMigrate from '@/assets/images/智能迁移.png'
 import imgChat from '@/assets/images/logo.png'
 import imgMonitor from '@/assets/images/智能运维.png'
 
-const modules = [
+const modules: Array<{
+  id: string
+  img?: string
+  icon?: string
+  colorClass: string
+  title: string
+  description: string
+  features: { title: string; description: string }[]
+  route: string
+  linkText: string
+}> = [
   {
     id: 'module-a',
     img: imgAssess,

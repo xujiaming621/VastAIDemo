@@ -1,19 +1,22 @@
 import type { DifyChatRequest, DifySSEEvent } from '@/types'
 
 const DIFY_BASE = '/api/dify/v1'
-const DIFY_USER_ID = 'mvs-user'
+
+// Default user for regular chat page
+export const DEFAULT_USER_ID = 'chat-user'
 
 export async function* streamChatMessage(
   query: string,
   conversationId?: string,
   files?: DifyChatRequest['files'],
   signal?: AbortSignal,
+  userId: string = DEFAULT_USER_ID,
 ): AsyncGenerator<DifySSEEvent> {
   const body: DifyChatRequest = {
     inputs: {},
     query,
     response_mode: 'streaming',
-    user: DIFY_USER_ID,
+    user: userId,
     ...(conversationId ? { conversation_id: conversationId } : {}),
     ...(files?.length ? { files } : {}),
   }
@@ -77,44 +80,44 @@ export async function* streamChatMessage(
   }
 }
 
-export async function fetchConversationMessages(conversationId: string): Promise<unknown[]> {
+export async function fetchConversationMessages(conversationId: string, userId: string = DEFAULT_USER_ID): Promise<unknown[]> {
   const res = await fetch(
-    `${DIFY_BASE}/messages?conversation_id=${conversationId}&user=${DIFY_USER_ID}&limit=100`,
+    `${DIFY_BASE}/messages?conversation_id=${conversationId}&user=${userId}&limit=100`,
   )
   if (!res.ok) throw new Error(`Fetch messages failed: ${res.status}`)
   const data = await res.json()
   return data.data || []
 }
 
-export async function fetchConversations(): Promise<unknown[]> {
-  const res = await fetch(`${DIFY_BASE}/conversations?user=${DIFY_USER_ID}&limit=100&sort_by=-updated_at`)
+export async function fetchConversations(userId: string = DEFAULT_USER_ID): Promise<unknown[]> {
+  const res = await fetch(`${DIFY_BASE}/conversations?user=${userId}&limit=100&sort_by=-updated_at`)
   if (!res.ok) throw new Error(`Fetch conversations failed: ${res.status}`)
   const data = await res.json()
   return data.data || []
 }
 
-export async function renameConversation(conversationId: string, name: string): Promise<void> {
+export async function renameConversation(conversationId: string, name: string, userId: string = DEFAULT_USER_ID): Promise<void> {
   const res = await fetch(`${DIFY_BASE}/conversations/${conversationId}/name`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, user: DIFY_USER_ID }),
+    body: JSON.stringify({ name, user: userId }),
   })
   if (!res.ok) throw new Error(`Rename conversation failed: ${res.status}`)
 }
 
-export async function deleteConversation(conversationId: string): Promise<void> {
+export async function deleteConversation(conversationId: string, userId: string = DEFAULT_USER_ID): Promise<void> {
   const res = await fetch(`${DIFY_BASE}/conversations/${conversationId}`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user: DIFY_USER_ID }),
+    body: JSON.stringify({ user: userId }),
   })
   if (!res.ok) throw new Error(`Delete conversation failed: ${res.status}`)
 }
 
-export async function uploadFile(file: File): Promise<string> {
+export async function uploadFile(file: File, userId: string = DEFAULT_USER_ID): Promise<string> {
   const formData = new FormData()
   formData.append('file', file)
-  formData.append('user', DIFY_USER_ID)
+  formData.append('user', userId)
 
   const res = await fetch(`${DIFY_BASE}/files/upload`, {
     method: 'POST',
@@ -124,4 +127,3 @@ export async function uploadFile(file: File): Promise<string> {
   const data = await res.json()
   return data.id
 }
-
