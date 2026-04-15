@@ -6,7 +6,10 @@ import https from 'https';
 import fs from 'fs';
 import path from 'path';
 import url from 'url';
-import os from 'os';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // PUBLIC_PORT 是用户访问端口，PORT 作为别名兼容旧配置
 const PUBLIC_PORT = parseInt(process.env.PUBLIC_PORT) || parseInt(process.env.PORT) || 3000;
