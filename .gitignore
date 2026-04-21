@@ -36,3 +36,6 @@ lerna-debug.log*
 *.tmp
 *.temp
 .cache/
+
+# Runtime files
+server.pid

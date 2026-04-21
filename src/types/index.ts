@@ -16,6 +16,7 @@ export interface DifyFile {
 
 export interface DifySSEEvent {
   event: string
+  task_id?: string
   conversation_id?: string
   message_id?: string
   answer?: string

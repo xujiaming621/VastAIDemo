@@ -127,6 +127,15 @@ export async function deleteConversation(conversationId: string, userId: string 
   if (!res.ok) throw new Error(`Delete conversation failed: ${res.status}`)
 }
 
+export async function stopChatMessage(taskId: string, userId: string = DEFAULT_USER_ID): Promise<void> {
+  const res = await fetch(`${DIFY_BASE}/chat-messages/${taskId}/stop`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user: userId }),
+  })
+  if (!res.ok) throw new Error(`Stop chat failed: ${res.status}`)
+}
+
 export async function uploadFile(file: File, userId: string = DEFAULT_USER_ID): Promise<string> {
   const formData = new FormData()
   formData.append('file', file)

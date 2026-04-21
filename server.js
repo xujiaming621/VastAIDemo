@@ -51,6 +51,11 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    if (pathname === '/api/download-proxy' && req.method === 'GET') {
+        handleDownloadProxy(req, res, parsedUrl);
+        return;
+    }
+
     if (pathname === '/api/mvs/submit' && (req.method === 'POST' || req.method === 'OPTIONS')) {
         handleMvsSubmit(req, res);
         return;
@@ -381,6 +386,73 @@ function formatTicketForDify(data) {
     }
 
     return lines.join('\n');
+}
+
+function handleDownloadProxy(req, res, parsedUrl) {
+    const fileUrl = parsedUrl.query.url;
+    if (!fileUrl) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: '缺少 url 参数' }));
+        return;
+    }
+
+    let targetUrl;
+    try {
+        targetUrl = new URL(fileUrl);
+    } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: '无效的 URL' }));
+        return;
+    }
+
+    const isHttps = targetUrl.protocol === 'https:';
+    const httpModule = isHttps ? https : http;
+
+    const options = {
+        hostname: targetUrl.hostname,
+        port: targetUrl.port || (isHttps ? 443 : 80),
+        path: targetUrl.pathname + (targetUrl.search || ''),
+        method: 'GET',
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+    };
+
+    const proxyReq = httpModule.request(options, (proxyRes) => {
+        // Follow redirects (301/302)
+        if ((proxyRes.statusCode === 301 || proxyRes.statusCode === 302) && proxyRes.headers.location) {
+            proxyRes.resume();
+            const redirectParsed = url.parse(req.url, true);
+            redirectParsed.query.url = proxyRes.headers.location;
+            req.url = url.format(redirectParsed);
+            handleDownloadProxy(req, res, url.parse(req.url, true));
+            return;
+        }
+
+        const contentType = proxyRes.headers['content-type'] || 'application/octet-stream';
+        const contentDisposition = proxyRes.headers['content-disposition'] || '';
+        res.writeHead(proxyRes.statusCode, {
+            'Content-Type': contentType,
+            'Content-Disposition': contentDisposition,
+            'Access-Control-Allow-Origin': '*',
+        });
+        proxyRes.pipe(res);
+    });
+
+    proxyReq.setTimeout(30000, () => {
+        proxyReq.destroy();
+        if (!res.headersSent) {
+            res.writeHead(504, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: '下载超时' }));
+        }
+    });
+
+    proxyReq.on('error', (err) => {
+        if (!res.headersSent) {
+            res.writeHead(502, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+        }
+    });
+
+    proxyReq.end();
 }
 
 function handleHealthCheck(req, res) {

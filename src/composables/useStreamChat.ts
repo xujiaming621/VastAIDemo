@@ -1,5 +1,5 @@
 import { ref, shallowRef, onUnmounted } from 'vue'
-import { streamChatMessage } from '@/api'
+import { streamChatMessage, stopChatMessage } from '@/api'
 import type { DifySSEEvent, WorkflowNode } from '@/types'
 
 interface UseStreamChatOptions {
@@ -19,6 +19,7 @@ export function useStreamChat(options: UseStreamChatOptions = {}) {
   const conversationId = ref('')
   const error = ref<Error | null>(null)
   const abortController = shallowRef<AbortController | null>(null)
+  const currentTaskId = ref<string | null>(null)
 
   // Workflow tracking
   const workflowNodes = ref<WorkflowNode[]>([])
@@ -99,6 +100,7 @@ export function useStreamChat(options: UseStreamChatOptions = {}) {
     workflowRunning.value = false
     pendingDelta = ''
     lastRenderTime = 0
+    currentTaskId.value = null
 
     let retries = 0
 
@@ -121,6 +123,10 @@ export function useStreamChat(options: UseStreamChatOptions = {}) {
 
           if (event.conversation_id && !conversationId.value) {
             conversationId.value = event.conversation_id
+          }
+
+          if (event.task_id && !currentTaskId.value) {
+            currentTaskId.value = event.task_id
           }
 
           // Handle workflow events
@@ -170,6 +176,24 @@ export function useStreamChat(options: UseStreamChatOptions = {}) {
     isStreaming.value = false
   }
 
+  const stopStreaming = async () => {
+    const taskId = currentTaskId.value
+    const resolvedUserId = typeof options.userId === 'function' ? options.userId() : options.userId
+    // Abort local stream first for immediate UI response
+    abortController.value?.abort()
+    flushRemaining()
+    isStreaming.value = false
+    // Then notify server to stop generation
+    if (taskId) {
+      try {
+        await stopChatMessage(taskId, resolvedUserId)
+      } catch {
+        // ignore stop errors — stream is already aborted locally
+      }
+    }
+    currentTaskId.value = null
+  }
+
   const reset = () => {
     cancel()
     streamingText.value = ''
@@ -178,6 +202,7 @@ export function useStreamChat(options: UseStreamChatOptions = {}) {
     pendingDelta = ''
     workflowNodes.value = []
     workflowRunning.value = false
+    currentTaskId.value = null
   }
 
   onUnmounted(() => {
@@ -193,6 +218,7 @@ export function useStreamChat(options: UseStreamChatOptions = {}) {
     workflowRunning,
     sendMessage,
     cancel,
+    stopStreaming,
     reset,
   }
 }

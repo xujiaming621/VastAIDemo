@@ -211,6 +211,14 @@
           </template>
         </div>
 
+        <!-- Stop streaming button -->
+        <div class="stop-streaming-bar" v-if="isStreaming">
+          <button class="stop-streaming-btn" @click="handleStop">
+            <i class="fa fa-stop-circle-o" />
+            <span>停止响应</span>
+          </button>
+        </div>
+
         <!-- Input area -->
         <div
           class="input-area"
@@ -335,6 +343,7 @@ const {
   workflowNodes,
   workflowRunning,
   sendMessage: streamSend,
+  stopStreaming,
   reset: streamReset,
 } = useStreamChat({
   userId: () => userId.value,
@@ -518,6 +527,11 @@ const statusDotClass = computed(() => {
 function setStatus(text: string, type: StatusType) {
   statusText.value = text
   statusType.value = type
+}
+
+async function handleStop() {
+  await stopStreaming()
+  setStatus('在线', 'online')
 }
 
 const streamingParts = computed(() => {
@@ -740,6 +754,48 @@ function useSuggestion(text: string) {
   nextTick(() => inputRef.value?.focus())
 }
 
+// ── Attachment URL parsing ────────────────────────────────────
+// Matches patterns like: 附件: [1] https://... [2] https://...
+// or standalone URLs in the message
+const ATTACHMENT_BLOCK_RE = /附件[:：]\s*([\s\S]+?)(?=\n\n|\n(?![\[\d])|\s*$)/
+const ATTACHMENT_URL_RE = /\[(\d+)\]\s*(https?:\/\/[^\s\[\]]+)/g
+
+function extractAttachmentUrls(text: string): { url: string; index: number }[] {
+  const results: { url: string; index: number }[] = []
+  const blockMatch = ATTACHMENT_BLOCK_RE.exec(text)
+  const block = blockMatch ? blockMatch[1] : text
+  let m: RegExpExecArray | null
+  const re = new RegExp(ATTACHMENT_URL_RE.source, 'g')
+  while ((m = re.exec(block)) !== null) {
+    results.push({ index: parseInt(m[1]), url: m[2].trim() })
+  }
+  return results
+}
+
+function getFilenameFromUrl(fileUrl: string): string {
+  try {
+    const u = new URL(fileUrl)
+    const parts = u.pathname.split('/')
+    const name = decodeURIComponent(parts[parts.length - 1] || 'attachment')
+    return name || 'attachment'
+  } catch {
+    return 'attachment'
+  }
+}
+
+async function downloadUrlAsFile(fileUrl: string): Promise<File | null> {
+  try {
+    const proxyUrl = `/api/download-proxy?url=${encodeURIComponent(fileUrl)}`
+    const res = await fetch(proxyUrl)
+    if (!res.ok) return null
+    const blob = await res.blob()
+    const filename = getFilenameFromUrl(fileUrl)
+    return new File([blob], filename, { type: blob.type || 'application/octet-stream' })
+  } catch {
+    return null
+  }
+}
+
 async function handleSend() {
   const query = inputText.value.trim()
   if (!query || isStreaming.value) return
@@ -747,6 +803,16 @@ async function handleSend() {
   inputText.value = ''
   const currentFiles = [...uploadedFiles.value]
   uploadedFiles.value = []
+
+  // Parse attachment URLs from the query text and download them
+  const attachmentUrls = extractAttachmentUrls(query)
+  if (attachmentUrls.length > 0) {
+    setStatus('下载附件中...', 'loading')
+    for (const { url: attachUrl } of attachmentUrls) {
+      const file = await downloadUrlAsFile(attachUrl)
+      if (file) currentFiles.push(file)
+    }
+  }
 
   chatStore.addMessage({
     id: generateId(),
@@ -2024,6 +2090,32 @@ onUnmounted(() => {
   color: #C9CDD4;
   text-align: center;
   margin-top: 8px;
+}
+
+.stop-streaming-bar {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+
+.stop-streaming-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 18px;
+  border-radius: 20px;
+  border: 1px solid #d0d5dd;
+  background: #fff;
+  color: #374151;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.stop-streaming-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
 }
 
 /* ─── Responsive ─────────────────────────────────────────────── */
